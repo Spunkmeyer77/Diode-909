@@ -42,7 +42,7 @@
 
 namespace {
 
-constexpr const char* kVersion = "1.0.0";
+constexpr const char* kVersion = "1.1.0";
 constexpr int kInputs = 11;
 // inlet -> MIDI note understood by Engine::note
 constexpr int kNote[kInputs] = {36, 38, 43, 47, 50, 37, 39, 42, 46, 49, 51};
@@ -101,6 +101,7 @@ struct State {
     std::array<float, parameters.size()> applied{};
     std::atomic<float> flam{0.4f};    // 0..1 = 5..40 ms
     std::atomic<float> accent{0.5f};  // ACCENT knob: the accented hit's velocity
+    std::atomic<bool> eco{false};     // QUALITY ECO: no 2x oversampling
     double rate = 44100;
     bool prepared = false;
     double last[kInputs] = {};
@@ -132,6 +133,23 @@ void control(External* x, t_symbol*, long count, t_atom* atoms) {
     const double value = atom_getfloat(atoms + 1);
     if (!std::isfinite(value)) return;
     if (name == gensym("accent")) { x->state->accent.store(float(std::clamp(value, 0.0, 1.0))); return; }
+    if (name == gensym("eco")) { // QUALITY HQ/ECO: rebuilds the board (a short gap in the sound)
+        State& s = *x->state;
+        const bool on = value >= 0.5;
+        if (s.eco.exchange(on) == on) return;
+        try {
+            std::lock_guard<std::mutex> lock(s.mutex);
+            s.engine.setEco(on);
+            if (s.prepared) {
+                s.engine.prepare(s.rate);
+                for (auto& a : s.applied) a = -1.f;
+                s.flams.clear();
+            }
+        } catch (const std::exception& e) {
+            object_error(reinterpret_cast<t_object*>(x), "Could not switch QUALITY: %s", e.what());
+        }
+        return;
+    }
     for (size_t i = 0; i < parameters.size(); ++i)
         if (name == gensym(parameters[i].name)) {
             x->state->values[i].store(float(std::clamp(value, 0.0, 1.0)), std::memory_order_relaxed);

@@ -842,7 +842,7 @@ void VoiceBoard::setCalibration(const Calibration &c)
 void VoiceBoard::prepare(double hostRate)
 {
 	m_hostRate = hostRate;
-	m_factor = hostRate < 80000 ? 2 : 1;
+	m_factor = hostRate < 80000 && !m_eco ? 2 : 1; // ECO: the board at the host rate (no 2x oversampling)
 	if (const char *f = std::getenv("TR909_FACTOR")) // tools: force the oversampling
 		m_factor = std::max(1, std::atoi(f));
 	const int stages = m_factor >= 8 ? 3 : m_factor >= 4 ? 2 : m_factor >= 2 ? 1 : 0;
@@ -942,6 +942,13 @@ void VoiceBoard::prepare(double hostRate)
 	// 2 mV. Its reverb path's C55 and C57 (0.47 uF) carry the noise itself.
 	im.units[size_t(Voice::HC)].quietFloor(2e-3);
 	im.units[size_t(Voice::HC)].capacitorMove(2.0);
+	// Lower CPU (as DIODE 808 1.1.0): the other voices count as quiet within 1 mV (-80 dBV, was
+	// 10 uV), so long tails sleep sooner; the hats' and cymbals' envelope capacitors creep down for
+	// seconds after their jacks are silent, so they judge them within 25 mV.
+	for (Voice v : {Voice::BD, Voice::LT, Voice::MT, Voice::HT, Voice::RS, Voice::HH, Voice::CR, Voice::RD})
+		im.units[size_t(v)].quietFloor(1e-3);
+	for (Voice v : {Voice::HH, Voice::CR, Voice::RD})
+		im.units[size_t(v)].capacitorMove(25e-3);
 	if (im.mix.load("mix", "mix", sig, params("mix"))) {
 		im.mix.finish(sig, {"out.l", "out.r"});
 		for (auto &b : im.mix.blocks)

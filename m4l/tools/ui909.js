@@ -51,6 +51,7 @@ function inR(x, y, r) { return x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <
 function fmtVal(d) {
     var v = d.val;
     if (d.unit === 9) return Math.round(5 + 35 * v) + " ms";
+    if (d.unit === 12) return v >= 0.5 ? "ECO" : "HQ";
     return (v * 10).toFixed(1);
 }
 function toN(d) { return (d.val - d.min) / (d.max - d.min); }
@@ -62,7 +63,7 @@ function sendDial(name) { var o = this.patcher ? this.patcher.getnamed(name) : n
 // knob groups: header, [slot0 top-left, slot1 top-right, slot2 bottom-left, slot3 bottom-right],
 // instruments selected by clicking the header (left half / right half)
 var X0 = 8, GW = 100, KS = 24;
-var KG = [["TOTAL ACCENT", [["ACCENT", "d_ac"], ["FLAM", "d_flam"], null, ["SWING", "d_swing"]], [0, 0]],
+var KG = [["TOTAL ACCENT", [["ACCENT", "d_ac"], ["FLAM", "d_flam"], ["QUALITY", "d_eco"], ["SWING", "d_swing"]], [0, 0]],
           ["BASS DRUM", [["TUNE", "d_bd_tune"], ["LEVEL", "d_bd_lvl"], ["ATTACK", "d_bd_attack"], ["DECAY", "d_bd_decay"]], [1, 1]],
           ["SNARE DRUM", [["TUNE", "d_sd_tune"], ["LEVEL", "d_sd_lvl"], ["TONE", "d_sd_tone"], ["SNAPPY", "d_sd_snappy"]], [2, 2]],
           ["LOW TOM", [["TUNE", "d_lt_tune"], ["LEVEL", "d_lt_lvl"], ["DECAY", "d_lt_decay"], null], [3, 3]],
@@ -144,6 +145,14 @@ function button(r, lit, pressed) {
     drawArt(lit ? "btnLit" : (pressed ? "btnPressed" : "btnUnlit"), r[0], r[1], r[2], r[3], 0);
 }
 
+// QUALITY: HQ / ECO switch (two lit segments)
+function qualitySwitch(cx, cy, eco) {
+    var w = 15, h = 11, x = cx - w, y = cy - h / 2;
+    fillR([x - 1, y - 1, 2 * w + 2, h + 2], BLACK);
+    fillR([x, y, w, h], eco ? [0.30, 0.30, 0.32] : NAVY); fillR([x + w, y, w, h], eco ? NAVY : [0.30, 0.30, 0.32]);
+    font(1, 6.4); textC("HQ", x + w / 2, y + 8, eco ? [0.6, 0.6, 0.62] : WHITE); textC("ECO", x + w * 1.5, y + 8, eco ? AMBER : [0.6, 0.6, 0.62]);
+}
+
 // ---- paint ----
 function paint() {
     fillR([0, 0, W, H], PANEL);
@@ -163,6 +172,7 @@ function paint() {
             var it = KG[g][1][k]; if (!it) continue;
             var p = knobPos(g, k), d = DV[it[1]];
             font(1, 6.2); textC(it[0], p[0], p[1] - KS / 2 - 4, INK);
+            if (d && d.unit === 12) { qualitySwitch(p[0], p[1], d.val >= 0.5); continue; }
             knob(p[0], p[1], KS, d ? toN(d) : 0.5, false);
             if (dragMode === "vknob" && vName === it[1] && d) { // value while turning
                 var t = fmtVal(d); font(1, 7); var m = mgraphics.text_measure(t);
@@ -279,6 +289,7 @@ function onclick(x, y, but, cmd, shift, capslock, option) {
     dragMode = null;
     if (x >= LOGO[0] && y < LOGO[1] + 24 && y > LOGO[1] - 22 && x < LOGO[0] + 116) { max.launchbrowser("https://ticcoross.gumroad.com/"); return; }
     var kn = knobAt(x, y);
+    if (kn && DV[kn] && DV[kn].unit === 12) { DV[kn].val = DV[kn].val >= 0.5 ? 0 : 1; sendDial(kn); mgraphics.redraw(); return; }
     if (kn && DV[kn]) { dragMode = "vknob"; vName = kn; dragY = y; dragStart = toN(DV[kn]); vFine = shift; mgraphics.redraw(); return; }
     for (var vl = 1; vl < NV && !MS_GRID; vl++) { var lr = msLed(vl); if (inR(x, y, [lr[0] - 2, lr[1] - 2, lr[2] + 4, lr[3] + 4])) {
         if (option || cmd) { if (cmd) { for (var q0 = 1; q0 < NV; q0++) if (q0 !== vl) solo[q0] = 0; } solo[vl] = solo[vl] ? 0 : 1; }
@@ -328,6 +339,7 @@ function onclick(x, y, but, cmd, shift, capslock, option) {
 }
 function ondblclick(x, y) {
     var kn = knobAt(x, y);
+    if (kn && DV[kn] && DV[kn].unit === 12) { onclick(x, y, 1, 0, 0); return; }
     if (kn && DV[kn] && DV[kn].def !== undefined) { DV[kn].val = DV[kn].def; sendDial(kn); dragMode = null; mgraphics.redraw(); return; }
     onclick(x, y, 1, 0, 0);
 }

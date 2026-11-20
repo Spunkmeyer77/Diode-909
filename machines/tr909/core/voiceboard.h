@@ -127,6 +127,9 @@ public:
 	static const std::vector<Part> &parts();
 	double internalRate() const { return m_rate; }
 	int factor() const { return m_factor; }
+	// ECO: no 2x oversampling of the board below 80 kHz (about 40 % less CPU); call prepare() after.
+	void setEco(bool on) { m_eco = on; }
+	bool eco() const { return m_eco; }
 	std::string blockReport() const; // tools: each circuit's steps, Newton iterations, linear steps
 	// What each circuit's solver did since prepare() (circuit::Circuit::Stats), for tools: one entry
 	// per partition, with its unit (a Voice, kTomNoiseUnit or kMixUnit) and name ("bd:vco"). A step
@@ -150,6 +153,7 @@ private:
 	std::array<uint8_t, 16> m_latch{};
 	double m_hostRate = 48000, m_rate = 96000;
 	int m_factor = 2;
+	bool m_eco = false;
 	std::array<bool, kVoices> m_plugged{};
 	Decimator m_decL, m_decR;
 	std::vector<float> m_workL, m_workR;

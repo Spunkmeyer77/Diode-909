@@ -11,6 +11,7 @@ public:
     void render(float *left, float *right, int frames);
     void setRoms(const tr909::SampleRoms &roms);
     void setParallel(tr909::Parallel *p) { m_board.setParallel(p); }
+    void setEco(bool on) { m_board.setEco(on); }
 private:
     static int voiceOfNote(int note);
     tr909::VoiceBoard m_board;

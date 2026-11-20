@@ -67,6 +67,7 @@ for n, dl in enumerate(DIALS):
     va = {'parameter_initial': [dl['init']], 'parameter_initial_enable': 1, 'parameter_longname': dl['long'],
           'parameter_shortname': dl['short'], 'parameter_modmode': 0, 'parameter_type': 0,
           'parameter_mmin': float(dl['lo']), 'parameter_mmax': float(dl['hi']), 'parameter_unitstyle': 1}
+    if dl.get('enum'): va.update({'parameter_type': 2, 'parameter_enum': dl['enum'], 'parameter_mmax': float(len(dl['enum']) - 1)})
     add({'id': var, 'varname': var, 'maxclass': 'live.dial', 'numinlets': 1, 'numoutlets': 2, 'outlettype': ['', 'float'],
          'parameter_enable': 1, 'patching_rect': [1500.0, y, 44.0, 45.0], 'saved_attribute_attributes': {'valueof': va}})
     add({'id': 'p_' + var, 'maxclass': 'newobj', 'text': 'prepend ' + dl['msg'], 'numinlets': 1, 'numoutlets': 1,
@@ -80,7 +81,7 @@ long = {dl['var']: dl['long'] for dl in DIALS}
 BANKS = [('Main', ['d_ac', 'd_flam', 'd_swing', 'd_vol', 'd_rs_lvl', 'd_cp_lvl', 'd_hh_lvl', 'd_ch_decay']),
          ('BD SD', ['d_bd_lvl', 'd_bd_tune', 'd_bd_attack', 'd_bd_decay', 'd_sd_lvl', 'd_sd_tune', 'd_sd_tone', 'd_sd_snappy']),
          ('Toms', ['d_lt_lvl', 'd_lt_tune', 'd_lt_decay', 'd_mt_lvl', 'd_mt_tune', 'd_mt_decay', 'd_ht_lvl', 'd_ht_tune']),
-         ('Cymbals', ['d_ht_decay', 'd_oh_decay', 'd_cr_lvl', 'd_cr_tune', 'd_rd_lvl', 'd_rd_tune', '-', '-'])]
+         ('Cymbals', ['d_ht_decay', 'd_oh_decay', 'd_cr_lvl', 'd_cr_tune', 'd_rd_lvl', 'd_rd_tune', 'd_eco', '-'])]
 banks = {str(n): {'index': n, 'name': name, 'parameters': [long.get(v, '-') for v in vs]} for n, (name, vs) in enumerate(BANKS)}
 P['parameters'] = {k: v for k, v in P['parameters'].items() if not k.startswith('d_')}
 P['parameters'].update(params); P['parameters']['parameterbanks'] = banks
