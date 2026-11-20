@@ -237,11 +237,10 @@ function paint() {
     font(0, 5.5); textL("ticcoross.gumroad.com", LOGO[0] + 1, LOGO[1] + 22, DIM);
     var anySolo = 0; for (var v0 = 1; v0 < NV; v0++) if (solo[v0]) anySolo = 1;
     for (var vl = 1; vl < NV && !MS_GRID; vl++) {
-        var lr = msLed(vl), on = solo[vl] ? AMBER : (mute[vl] ? [1, 0.18, 0.12] : null), dark = anySolo && !solo[vl] && !mute[vl];
+        var lr = msLed(vl), on = solo[vl] ? [0.93, 0.91, 0.82] : (mute[vl] ? [0.86, 0.40, 0.16] : null), dark = anySolo && !solo[vl] && !mute[vl];
         if (on) {
-            col([0.86, 0.85, 0.80]); mgraphics.ellipse(lr[0] - 0.8, lr[1] - 0.8, lr[2] + 1.6, lr[3] + 1.6); mgraphics.fill();
-            col(on); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
-            col([1, 1, 0.9], 0.7); mgraphics.ellipse(lr[0] + 1.8, lr[1] + 1.4, 2.4, 2); mgraphics.fill(); // highlight
+            col(on); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill(); // muted: 909 orange; soloed: cream
+            col([1, 1, 0.95], 0.35); mgraphics.ellipse(lr[0] + 1.8, lr[1] + 1.4, 2.4, 2); mgraphics.fill(); // soft highlight
         } else { // off: a lighter navy with a thin light ring, in the bar's style
             col(dark ? [0.30, 0.33, 0.50] : [0.27, 0.30, 0.45]); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
             col([0.80, 0.82, 0.90], dark ? 0.85 : 0.6); mgraphics.set_line_width(0.8); mgraphics.ellipse(lr[0] + 0.4, lr[1] + 0.4, lr[2] - 0.8, lr[3] - 0.8); mgraphics.stroke();
