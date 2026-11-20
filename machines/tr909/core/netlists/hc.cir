@@ -6,8 +6,7 @@
 * Controls: level (VR20 50k B, a rheostat in IC28a's feedback); tm (TM 10k B, the service trim,
 * default the .param tm: set per the ADJUSTMENT note, LEVEL at centre, 2 Vp-p at MULTI OUT;
 * docs/circuit/rshc.md, "TM").
-* The noise is band-passed by IC26b (MFB; ~960 Hz with the printed 4.7n C42/C43, ~1.15 kHz with the
-* 3.9n DIODE 909 uses for a slightly brighter clap) and goes two ways into IC28a: through the OTA
+* The noise is band-passed by IC26b (MFB, ~960 Hz) and goes two ways into IC28a: through the OTA
 * IC30 (BA662A), whose I_ABC the dual PNP Q38 takes from R235 by the sawtooth envelope ENV1 (C65,
 * slammed down four times by Q86 under the AN6912 IC29) against TM, the clap's four pulses; and
 * through C55/R204/C57 (~80-440 Hz) into the transistor attenuator Q37, whose base C59/C61 feed
@@ -22,10 +21,9 @@
 * from SN 415300 (c507=1p before).
 * tm: TM's wiper (0 at the -15 V end, 1 at ground), a .param so the board's Calibration can set it;
 * 0.255 is the service notes' adjustment done on the model. c42, c43, c57, c59, c61, c62, c64, r226:
-* printed values, for the Calibration (docs/circuit/rshc.md, "Calibration"); c42/c43 3.9n (printed 4.7n) since
-* DIODE 909 1.2.1.
+* printed values, for the Calibration (docs/circuit/rshc.md, "Calibration").
 .param rlatch=600 rdac=2.54k cmpvg=0.5m c65=0.47u c507=0.01u tm=0.255 c62=0.027u c64=0.001u r226=68k
-+ c59=0.1u c61=0.1u c42=0.0039u c43=0.0039u c57=0.47u
++ c59=0.1u c61=0.1u c42=0.0047u c43=0.0047u c57=0.47u
 VB15 b15 0 15
 VNB15 nb15 0 -15
 VTRIG trig 0 input trig

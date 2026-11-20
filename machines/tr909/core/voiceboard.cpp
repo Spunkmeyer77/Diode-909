@@ -689,10 +689,11 @@ Calibration unitCalibration()
 		{"rs.c112", 0.01027e-6}, {"rs.c113", 0.01027e-6},
 		{"rs.c115", 0.02646e-6}, {"rs.c116", 0.02646e-6},
 		{"rs.c117", 0.00485e-6}, {"rs.c118", 0.00485e-6},
-		// the clap: TM at 0.30 (the OTA's pulses level with the other voices; the service notes'
-		// 2 Vp-p gives 0.255), C65 -17 % (the teeth's spacing), C57 -19 % (the reverb's level), both
-		// electrolytic
-		{"hc.tm", 0.30},
+		// the clap: TM at 0.43 (DIODE 909 1.2.1: matched to a real TR-909's clap, whose body after the
+		// three teeth is as loud as they are and is down 24 dB at 100 ms; 0.30 left the body 16 dB
+		// under the teeth; the service notes' 2 Vp-p gives 0.255), C65 -17 % (the teeth's spacing),
+		// C57 -19 % (the reverb's level), both electrolytic
+		{"hc.tm", 0.43},
 		{"hc.c65", 0.39e-6},
 		{"hc.c57", 0.38e-6},
 		// the toms: LT's TUNE pot +6 % and MT's -2.5 % (each tom's span over the turn); VCO1's or

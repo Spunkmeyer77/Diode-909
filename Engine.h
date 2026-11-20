@@ -13,6 +13,7 @@ public:
     void setParallel(tr909::Parallel *p) { m_board.setParallel(p); }
     void setEco(bool on) { m_board.setEco(on); }
     bool boardAsleep() const { return m_board.asleep(); }
+    void setHcTrim(double tm) { auto c = m_board.controls(); c.hcTm = tm; m_board.setControls(c); } // the clap's TM trimmer (-1: netlist default)
     std::string report() const { return m_board.blockReport(); } // tools (TR909_PROFILE)
 private:
     static int voiceOfNote(int note);
