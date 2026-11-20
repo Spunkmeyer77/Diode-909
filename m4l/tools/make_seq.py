@@ -18,18 +18,11 @@ rep('var VERSION = "1.1.0";', 'var VERSION = "1.0.0";')
 rep('var NOTES = [-1, 36, 38, 43, 47, 50, 37, 39, 56, 49, 42, 46, 64, 63, 62, 75];', 'var NOTES = [-1, 36, 38, 43, 47, 50, 37, 39, 42, 46, 49, 51, -1, -1, -1, -1];')
 # mute/solo and selection: only the 11 voices in use
 rep('for (var v = 1; v < NI; v++) { if (mute[v])', 'for (var v = 1; v < NV; v++) { if (mute[v])')
-rep('var anySolo = 0; for (var v0 = 1; v0 < NI; v0++)', 'var anySolo = 0; for (var v0 = 1; v0 < NV; v0++)')
-rep('    for (var v = 1; v < NI; v++) {\n        var mr = msRect(0, v)', '    for (var v = 1; v < NV; v++) {\n        var mr = msRect(0, v)')
-rep('rect([MSX + (NI - 1) * (MSCW + 2) + 6', 'rect([MSX + (NV - 1) * (MSCW + 2) + 6')
-rep('    for (var v = 1; v < NI; v++) {\n        if (inR(x, y, msRect(0, v)))', '    for (var v = 1; v < NV; v++) {\n        if (inR(x, y, msRect(0, v)))')
-rep('if (cmd) { for (var q = 1; q < NI; q++) solo[q] = 0;', 'if (cmd) { for (var q = 1; q < NV; q++) solo[q] = 0;')
-rep('for (var v1 = 1; v1 < NI; v1++) { var nr0', 'for (var v1 = 1; v1 < NV; v1++) { var nr0')
 rep('else if (p >= 52 && p <= 67) { setInst(p - 52); }', 'else if (p >= 52 && p < 52 + NV) { setInst(p - 52); }')
 rep('select AC,BD,SD,LT,MT,HT,RS,CP,CB,CY,CH,OH,LC,MC,HC,CL,', 'select AC,BD,SD,LT,MT,HT,RS,CP,CH,OH,CR,RD,')
 rep('for (var i = 1; i < NI; i++) if (NOTES[i] === p) {', 'for (var i = 1; i < NV; i++) if (NOTES[i] === p || (p === 35 && i === 1) || (p === 40 && i === 2) || (p === 41 && i === 3) || (p === 45 && i === 4) || (p === 48 && i === 5) || (p === 44 && i === 8)) {')
 # logo
-rep('fontI(24); textR("DIODE 808", W - 14, 33, CREAM);', 'fontI(24); textR("DIODE 909", W - 14, 33, CREAM);')
-rep('var lw = mgraphics.text_measure("DIODE 808")[0]', 'var lw = mgraphics.text_measure("DIODE 909")[0]')
+
 # knobs per instrument: 909 front panel
 groups = [["d_ac", "d_flam", "d_swing", "d_vol"],
           ["d_bd_lvl", "d_bd_tune", "d_bd_attack", "d_bd_decay"],
@@ -41,8 +34,38 @@ DIALS = json.load(open(sys.argv[3]))
 dv = {}
 for d in DIALS:
     dv[d['var']] = {"label": d['short'], "min": d['lo'], "max": d['hi'], "val": d['init'], "def": d['init'], "unit": d['unit'], "exp": 1}
-a = s.index('var GROUPS = '); b = s.index('\n', s.index('var DV = '))
-s = s[:a] + 'var GROUPS = ' + json.dumps(groups) + ';\nvar DV = ' + json.dumps(dv) + ';' + s[b:]
+# replace the 808 panel (layout, drawing, mouse) with the 909 panel (tools/ui909.js) + packed artwork
+import base64, os
+from PIL import Image
+here = os.path.dirname(os.path.abspath(__file__)); art = os.path.join(here, '..', 'art')
+def load(name, size, square=False):
+    im = Image.open(os.path.join(art, name + '-1024.png')).convert('RGBA')
+    bb = im.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox()
+    im = im.crop(bb)
+    if square:
+        m = max(im.size); sq = Image.new('RGBA', (m, m), (0, 0, 0, 0)); sq.paste(im, ((m - im.width) // 2, (m - im.height) // 2)); im = sq
+    return im.resize(size, Image.LANCZOS)
+ASSETS = {'knob': ('Rotary-Knob', (48, 48), True), 'knobBig': ('Master-Volume-Knob', (68, 68), True),
+          'keyUnlit': ('Drum-Machine-Key-Unlit', (82, 82), False), 'keyLit': ('Drum-Machine-Key-Lit', (82, 82), False),
+          'keyBlue': ('Drum-Machine-Key-Blue', (82, 82), False), 'keyPressed': ('Drum-Machine-Key-Pressed', (82, 82), False),
+          'btnUnlit': ('Small-Square-Button-Unlit', (40, 40), False), 'btnLit': ('Small-Square-Button-Lit', (40, 40), False),
+          'btnPressed': ('Small-Square-Button-Pressed', (40, 40), False)}
+artjs = {}
+for k, (f, size, sq) in ASSETS.items():
+    im = load(f, size, sq)
+    artjs[k] = {'w': im.width, 'h': im.height, 'd': base64.b64encode(im.tobytes()).decode()}
+    if k == 'keyLit':  # LED window: the red pixels
+        px = im.load(); xs = []; ys = []
+        for y in range(im.height):
+            for x in range(im.width):
+                r, g, b, a = px[x, y]
+                if r > 200 and g < 140 and b < 110 and a > 200: xs.append(x); ys.append(y)
+        ledbox = [min(xs) / im.width, min(ys) / im.height, (max(xs) - min(xs) + 1) / im.width, (max(ys) - min(ys) + 1) / im.height]
+a = s.index('// ---------- layout ----------'); b = s.index('function clamp(')
+ui = open(os.path.join(here, 'ui909.js')).read()
+s = (s[:a] + 'var GROUPS = ' + json.dumps(groups) + ';\nvar DV = ' + json.dumps(dv) + ';\n'
+     + 'var LEDBOX = ' + json.dumps([round(v, 4) for v in ledbox]) + ';\n'
+     + 'var ART = ' + json.dumps(artjs, separators=(',', ':')) + ';\n' + ui + '\n' + s[b:])
 assert '808' not in s.replace('// 808', '').replace('808-style', '').replace('key808', '').replace('808 style', '').replace("808's", '').replace('(808:', '') or True
 open(out, 'w').write(s)
 print('ok', len(s))
