@@ -196,6 +196,7 @@ function paint() {
         if (on) {
             col(on); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill(); // muted: 909 orange; soloed: cream
             col([1, 1, 0.95], 0.35); mgraphics.ellipse(lr[0] + 1.8, lr[1] + 1.4, 2.4, 2); mgraphics.fill(); // soft highlight
+            col([0.80, 0.82, 0.90], 0.6); mgraphics.set_line_width(0.8); mgraphics.ellipse(lr[0] + 0.4, lr[1] + 0.4, lr[2] - 0.8, lr[3] - 0.8); mgraphics.stroke(); // the same grey ring as off
         } else { // off: a lighter navy with a thin light ring, in the bar's style
             col(dark ? [0.30, 0.33, 0.50] : [0.27, 0.30, 0.45]); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
             col([0.80, 0.82, 0.90], dark ? 0.85 : 0.6); mgraphics.set_line_width(0.8); mgraphics.ellipse(lr[0] + 0.4, lr[1] + 0.4, lr[2] - 0.8, lr[3] - 0.8); mgraphics.stroke();
