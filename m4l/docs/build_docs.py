@@ -17,6 +17,7 @@ h3{color:#343a5c;margin:12px 0 3px;font-size:11.5pt}.small{font-size:8.5pt;color
 .features div{border-left:4px solid #f08a24;padding-left:9px}
 .features b{display:block;color:#343a5c;font-size:12pt;margin-bottom:2px}.features span{font-size:9.5pt;color:#333}
 .cfoot{text-align:center;color:#555;font-size:9.5pt;margin-top:4mm}
+.hhead{background:#e9e6de;margin:-2mm -2mm 4mm;padding:6mm 9mm 4mm}.vt{color:#343a5c;font-weight:normal;font-size:11pt;margin-left:6px}
 </style>"""
 def page(body): return "<html><head><meta charset=utf-8>" + CSS + "</head><body>" + body + "</body></html>"
 man = """<div class=cover>
@@ -134,15 +135,23 @@ man = """<div class=cover>
 <h3>Tips</h3><ul><li>Crackles in a heavy project: switch QUALITY to ECO, or raise Live's buffer size (Settings → Audio).</li><li>Freeze or resample tracks you have finished to save CPU.</li><li>Export in HQ for the best sound.</li><li>The device is silent on macOS: see chapter 5.</li></ul></section>
 
 <section><h2>21. Credits and Support</h2><p>DIODE 909 by Transistor Labs (Ticco Ross).</p><p>Support, questions and feedback: <b>ticcoross@gmail.com</b><br>More instruments and updates: <b>https://ticcoross.gumroad.com/</b></p><p class=small>TR-909 and Roland are trademarks of Roland Corporation, which is not associated with this product. Product names are used only to describe the instrument this device recreates.</p></section>"""
-hist = """<h1>DIODE 909</h1><div class=sub>Max for Live — Update History</div><div class=stripe></div>
-<section><h2>1.2.5</h2><ul><li>WRITE, CLEAR, COPY and PASTE light up clearly: WRITE stays lit (with an orange label) while recording is on; the others flash when clicked.</li></ul></section>
-<section><h2>1.2.4</h2><ul><li>Mute and solo LEDs restyled to match the navy bars: navy rings when off; muted instruments light orange, soloed ones cream.</li></ul></section>
-<section><h2>1.2.3</h2><ul><li>Mute and solo LEDs in the instrument bars are bigger and easier to see: dark red when off, bright red when muted, amber when soloed.</li></ul></section>
-<section><h2>1.2.2</h2><ul><li>Hand clap level: at its factory LEVEL setting the clap now sits better with the other instruments (about 5 dB quieter than in 1.2.1).</li></ul></section>
-<section><h2>1.2.1</h2><ul><li>Hand clap matched to a real TR-909: a full, bright body after the three attack bursts (it was much too quiet), and a shorter low tail. It now sits naturally with the bass drum.</li><li>New RING knob on the snare drum: sets how long its low tone rings on after the hit. Fully up is the original sound.</li></ul></section>
-<section><h2>1.2.0</h2><ul><li>No more crackles with many instruments: the circuits now work 512 samples ahead, so a heavy attack has time to finish. DIODE 909 reports this latency to Live, which keeps it in time.</li><li>More voices compute at once on 8-core Macs (three helper threads).</li></ul></section>
-<section><h2>1.1.0</h2><ul><li>QUALITY switch: HQ (factory) or ECO, about a third less CPU.</li><li>Lower CPU in both modes: voices rest sooner once their sound has died away.</li><li>4/4 guide on the step keys (downbeats 1, 5, 9, 13 marked, keys grouped in fours).</li><li>Mute and solo as LEDs in the instrument bars.</li><li>Pattern slots as 909 keys, two rows of eight; displays beside the logo.</li><li>Knobs show their position at every value.</li></ul></section>
-<section><h2>1.0.0</h2><ul><li>First release.</li><li>The DIODE 909 circuit engine inside the x0x sequencer panel: circuit-level bass drum, snare, toms, rim shot and clap; hi-hats, crash and ride through the 909's sample playback circuits, built in.</li><li>All sound controls of the 909 front panel; master volume.</li><li>Accent, flam (Alt/Option-click, blue LED, 5–40 ms) and swing.</li><li>16 patterns, chains, mute/solo, MIDI in and WRITE recording.</li><li>TR-909 style panel: every sound control visible at once.</li><li>Push 3 parameter banks.</li></ul></section>"""
+hist = """<div class=hhead>
+<div class=stripe></div>
+<div class=brand>TRANSISTOR LABS</div>
+<h1 class=title style="font-size:40pt;margin-top:3mm">DIODE 909</h1>
+<div class=ctag style="margin-bottom:4mm">Update History · Max for Live</div>
+<img class=cimg src="full.png" style="margin-bottom:4mm">
+<p class=small>Current version: <b>""" + VERSION + """</b>. To update, replace your DIODE 909.amxd with the new one; your Live Sets keep their patterns and settings. Newest version first.</p>
+</div>
+<section><h2>1.2.5 <span class=vt>Clearer buttons</span></h2><ul><li>WRITE, CLEAR, COPY and PASTE light up clearly: WRITE stays lit, with an orange label, while recording is on; the others flash when clicked.</li><li>New, complete user manual with a cover and every function explained.</li></ul></section>
+<section><h2>1.2.4 <span class=vt>Mute and solo in the navy style</span></h2><ul><li>The mute and solo LEDs in the instrument bars match the panel: navy rings when off, orange when muted, cream when soloed, with the same grey ring in every state.</li></ul></section>
+<section><h2>1.2.3 <span class=vt>Bigger mute and solo LEDs</span></h2><ul><li>The mute and solo LEDs in the instrument bars are bigger and easier to find.</li></ul></section>
+<section><h2>1.2.2 <span class=vt>Clap level</span></h2><ul><li>At its factory LEVEL setting the hand clap now sits with the other instruments (about 5 dB quieter than in 1.2.1).</li></ul></section>
+<section><h2>1.2.1 <span class=vt>Hand clap matched to a real TR-909 · snare RING</span></h2><ul><li>The hand clap was matched against a recording of a real TR-909: a full, bright body after its three attack bursts (it was much too quiet) and a shorter low tail. It now sits naturally with the bass drum.</li><li>New RING knob on the snare drum: sets how long its low tone rings on after the hit. Fully up is the original sound.</li></ul></section>
+<section><h2>1.2.0 <span class=vt>No more crackles</span></h2><ul><li>The circuits now work 512 samples ahead, so even the heaviest hits have time to finish: no more crackles with many instruments playing. DIODE 909 reports this latency to Live, which keeps it in time.</li><li>More instruments compute at once on 8-core Macs.</li></ul></section>
+<section><h2>1.1.0 <span class=vt>HQ/ECO quality · the 909 panel</span></h2><ul><li>QUALITY switch: HQ (factory setting) or ECO, about a third less CPU.</li><li>Lower CPU in both modes: instruments rest sooner once their sound has died away.</li><li>4/4 guide on the step keys: downbeats 1, 5, 9 and 13 marked, keys grouped in fours.</li><li>Mute and solo as LEDs in the instrument bars.</li><li>Pattern slots as 909 keys in two rows of eight; displays beside the logo.</li><li>Knobs show their position at every value.</li></ul></section>
+<section><h2>1.0.0 <span class=vt>First release</span></h2><ul><li>The DIODE 909 circuit engine inside an x0x sequencer: circuit-level bass drum, snare, toms, rim shot and hand clap; hi-hats, crash and ride through the 909's sample playback circuits, built in.</li><li>A TR-909 style panel with every sound control of the 909's front panel visible at once, plus a master volume.</li><li>Accent, flam (Alt/Option-click, blue LED, 5–40 ms) and swing.</li><li>16 patterns, chains, mute and solo, MIDI in and WRITE recording.</li><li>Push 3 parameter banks.</li></ul></section>
+<p class=small style="margin-top:8mm">Transistor Labs · ticcoross@gmail.com · https://ticcoross.gumroad.com/</p>"""
 for name, b in [("DIODE 909 - User Manual", man), ("DIODE 909 - Update History", hist)]:
     open("_t.html", "w").write(page(b))
     subprocess.run(["google-chrome", "--headless", "--no-sandbox", "--disable-gpu", "--no-pdf-header-footer",
