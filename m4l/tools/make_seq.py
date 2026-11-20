@@ -44,6 +44,18 @@ def load(name, size, square=False):
     im = im.crop(bb)
     if square:
         m = max(im.size); sq = Image.new('RGBA', (m, m), (0, 0, 0, 0)); sq.paste(im, ((m - im.width) // 2, (m - im.height) // 2)); im = sq
+    if name.endswith('Knob'):  # remove the painted orange pointer: the panel draws it as a line
+        px = im.load(); w, h = im.size
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if a > 0 and r > 120 and r > g + 40 and r > b + 60:
+                    px[x, y] = px[x - int(w * 0.03), y] if x - int(w * 0.03) >= 0 else px[x, y]
+        for y in range(h):  # second pass for anti-aliased edges
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if a > 0 and r > g + 18 and r > b + 25:
+                    px[x, y] = px[x - int(w * 0.045), y]
     return im.resize(size, Image.LANCZOS)
 ASSETS = {'knob': ('Rotary-Knob', (48, 48), True), 'knobBig': ('Master-Volume-Knob', (68, 68), True),
           'keyUnlit': ('Drum-Machine-Key-Unlit', (82, 82), False), 'keyLit': ('Drum-Machine-Key-Lit', (82, 82), False),

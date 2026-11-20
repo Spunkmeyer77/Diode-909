@@ -31,15 +31,7 @@ function buildArt() {
     } catch (e) { USE_ART = false; IMG = {}; }
 }
 buildArt();
-function drawArt(k, x, y, w, h, deg) {
-    var img = IMG[k], a = ART[k];
-    mgraphics.save();
-    mgraphics.translate(x + w / 2, y + h / 2);
-    if (deg) mgraphics.rotate(deg * Math.PI / 180);
-    mgraphics.scale(w / a.w, h / a.h);
-    mgraphics.image_surface_draw(img, [0, 0, a.w, a.h], [-a.w / 2, -a.h / 2, a.w, a.h]);
-    mgraphics.restore();
-}
+function drawArt(k, x, y, w, h) { mgraphics.image_surface_draw(IMG[k], [0, 0, ART[k].w, ART[k].h], [x, y, w, h]); }
 
 // ---- helpers ----
 function col(c, a) { mgraphics.set_source_rgba(c[0], c[1], c[2], a === undefined ? 1 : a); }
@@ -125,7 +117,12 @@ function knob(cx, cy, size, nrm, big) {
         mgraphics.move_to(cx + Math.sin(a) * (r + 2), cy - Math.cos(a) * (r + 2));
         mgraphics.line_to(cx + Math.sin(a) * (r + 4.5), cy - Math.cos(a) * (r + 4.5)); mgraphics.stroke();
     }
-    if (USE_ART) drawArt(big ? "knobBig" : "knob", cx - r, cy - r, size, size, deg); else knobCode(cx, cy, r, deg);
+    if (!USE_ART) { knobCode(cx, cy, r, deg); return; }
+    drawArt(big ? "knobBig" : "knob", cx - r, cy - r, size, size, 0); // never rotated: Max can't draw rotated images
+    var pa = deg * Math.PI / 180, pr = r * 0.9;
+    col(ORANGE); mgraphics.set_line_width(big ? 2 : 1.5);
+    mgraphics.move_to(cx + Math.sin(pa) * pr * 0.08, cy - Math.cos(pa) * pr * 0.08);
+    mgraphics.line_to(cx + Math.sin(pa) * pr, cy - Math.cos(pa) * pr); mgraphics.stroke();
 }
 function stepKey(r, state) {
     if (!USE_ART) { keyCode(r, state); return; }
