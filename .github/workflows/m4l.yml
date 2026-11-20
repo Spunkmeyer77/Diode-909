@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 env:
-  VERSION: 1.2.2
+  VERSION: 1.2.3
 jobs:
   mac:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')

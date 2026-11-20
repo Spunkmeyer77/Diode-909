@@ -17,7 +17,7 @@ var POS = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]];
 var ALT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 function posOf(i) { for (var p = 0; p < POS.length; p++) for (var a = 0; a < POS[p].length; a++) if (POS[p][a] === i) return [p, a]; return [0, 0]; }
 function posLabel(p) { return POS[p].length > 1 ? NAMES[POS[p][0]] + "\u00b7" + NAMES[POS[p][1]] : NAMES[POS[p][0]]; }
-var VERSION = "1.2.2";
+var VERSION = "1.2.3";
 var NOTES = [-1, 36, 38, 43, 47, 50, 37, 39, 42, 46, 49, 51, -1, -1, -1, -1]; // AC = accent
 
 var pats = [], plen = [];
@@ -126,7 +126,7 @@ function headRect(g) { return [X0 + g * GW + 2, 4, GW - 4, 10]; }
 var MS_GRID = false; // false: mute/solo as LEDs in the navy header bars
 function msLed(v) { // the header LED of instrument v (1..11)
     for (var g = 1; g < KG.length; g++) { var sel = KG[g][2]; for (var h = 0; h < 2; h++) if (sel[h] === v && (h === 0 || sel[1] !== sel[0])) {
-        var hr = headRect(g); return [h === 0 ? hr[0] + 2.5 : hr[0] + hr[2] - 8.5, hr[1] + 2, 6, 6]; } }
+        var hr = headRect(g); return [h === 0 ? hr[0] + 1.5 : hr[0] + hr[2] - 9.5, hr[1] + 1, 8, 8]; } }
     return null;
 }
 var VOL = [W - 30, 63, 34];
@@ -214,7 +214,7 @@ function paint() {
         else {
             var parts = g === 6 ? ["RIM SHOT", "HAND CLAP"] : (g === 7 ? ["CH", "OH"] : ["CRASH", "RIDE"]);
             if (g === 7) textC("HI HAT", hr[0] + hr[2] / 2, hr[1] + 7.6, (inst === 8 || inst === 9) ? WHITE : ORANGE);
-            else { font(1, g === 6 ? 5.8 : 6.6); for (var h = 0; h < 2; h++) textC(parts[h], hr[0] + hr[2] * (h ? 0.7 : 0.3), hr[1] + 7.4, inst === sel[h] ? WHITE : ORANGE); }
+            else { font(1, g === 6 ? 5.6 : 6.6); for (var h = 0; h < 2; h++) textC(parts[h], hr[0] + hr[2] * (h ? 0.69 : 0.31), hr[1] + 7.4, inst === sel[h] ? WHITE : ORANGE); }
         }
         if (g) { col(INK); mgraphics.set_line_width(1); mgraphics.move_to(x + 0.5, 16); mgraphics.line_to(x + 0.5, 86); mgraphics.stroke(); }
         for (var k = 0; k < KG[g][1].length; k++) {
@@ -237,10 +237,16 @@ function paint() {
     font(0, 5.5); textL("ticcoross.gumroad.com", LOGO[0] + 1, LOGO[1] + 22, DIM);
     var anySolo = 0; for (var v0 = 1; v0 < NV; v0++) if (solo[v0]) anySolo = 1;
     for (var vl = 1; vl < NV && !MS_GRID; vl++) {
-        var lr = msLed(vl), on = solo[vl] ? AMBER : (mute[vl] ? RED : null), dark = anySolo && !solo[vl] && !mute[vl];
-        if (on) { col(on, 0.35); mgraphics.ellipse(lr[0] - 1.5, lr[1] - 1.5, lr[2] + 3, lr[3] + 3); mgraphics.fill(); }
-        col(on || (dark ? [0.45, 0.12, 0.10] : [0.10, 0.11, 0.18])); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
-        col(WHITE, 0.35); mgraphics.set_line_width(0.6); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.stroke();
+        var lr = msLed(vl), on = solo[vl] ? AMBER : (mute[vl] ? [1, 0.18, 0.12] : null), dark = anySolo && !solo[vl] && !mute[vl];
+        // light rim, so the LED shows on the navy bar even when off
+        col([0.86, 0.85, 0.80]); mgraphics.ellipse(lr[0] - 0.8, lr[1] - 0.8, lr[2] + 1.6, lr[3] + 1.6); mgraphics.fill();
+        if (on) {
+            col(on); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
+            col([1, 1, 0.9], 0.7); mgraphics.ellipse(lr[0] + 1.8, lr[1] + 1.4, 2.4, 2); mgraphics.fill(); // highlight
+        } else {
+            col(dark ? [0.55, 0.16, 0.12] : [0.36, 0.09, 0.08]); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
+            col([1, 0.8, 0.8], 0.25); mgraphics.ellipse(lr[0] + 1.8, lr[1] + 1.4, 2.4, 2); mgraphics.fill();
+        }
     }
     font(1, 5.5);
     for (var v = 1; v < NV && MS_GRID; v++) {
@@ -340,7 +346,7 @@ function onclick(x, y, but, cmd, shift, capslock, option) {
     var kn = knobAt(x, y);
     if (kn && DV[kn] && DV[kn].unit === 12) { DV[kn].val = DV[kn].val >= 0.5 ? 0 : 1; sendDial(kn); mgraphics.redraw(); return; }
     if (kn && DV[kn]) { dragMode = "vknob"; vName = kn; dragY = y; dragStart = toN(DV[kn]); vFine = shift; mgraphics.redraw(); return; }
-    for (var vl = 1; vl < NV && !MS_GRID; vl++) { var lr = msLed(vl); if (inR(x, y, [lr[0] - 2, lr[1] - 2, lr[2] + 4, lr[3] + 4])) {
+    for (var vl = 1; vl < NV && !MS_GRID; vl++) { var lr = msLed(vl); if (inR(x, y, [lr[0] - 2, lr[1] - 1, lr[2] + 4, lr[3] + 2])) {
         if (option || cmd) { if (cmd) { for (var q0 = 1; q0 < NV; q0++) if (q0 !== vl) solo[q0] = 0; } solo[vl] = solo[vl] ? 0 : 1; }
         else mute[vl] = mute[vl] ? 0 : 1;
         sendMS(); changed(); return;
