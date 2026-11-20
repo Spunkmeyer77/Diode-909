@@ -21,6 +21,8 @@
 #include <array>
 #include <atomic>
 #include <cmath>
+#include <chrono>
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <mutex>
@@ -42,7 +44,7 @@
 
 namespace {
 
-constexpr const char* kVersion = "1.1.0";
+constexpr const char* kVersion = "1.2.0";
 constexpr int kInputs = 11;
 // inlet -> MIDI note understood by Engine::note
 constexpr int kNote[kInputs] = {36, 38, 43, 47, 50, 37, 39, 42, 46, 49, 51};
@@ -94,12 +96,20 @@ int workerCount() {
     return cores >= 8 ? 3 : cores >= 4 ? 2 : (cores >= 2 ? 1 : 0);
 }
 
-struct Hit { long at; int input; bool accent; };
+// Render-ahead: Max for Live calls perform every 64 samples (1.45 ms), and a voice's attack can take
+// longer than that to compute (the solver works hardest on the edge). A render thread works kAhead
+// samples behind the input; perform only queues the triggers and copies finished audio, so an
+// attack has kAhead samples (11.6 ms at 44.1 kHz) to finish. The device reports kAhead samples of
+// latency (patcher "latency"), and Live delays the other tracks to match.
+constexpr int64_t kAhead = 512;
+constexpr int64_t kRing = 1 << 15;
+constexpr uint32_t kQueue = 4096;
+struct Hit { int64_t at; int input; bool accent; };
 
 struct State {
     std::unique_ptr<tr909::Parallel> parallel = std::make_unique<tr909::Parallel>(workerCount(), workerStart);
     Engine engine;
-    std::mutex mutex;
+    std::mutex mutex; // the engine: the render thread, and QUALITY's rebuild
     std::array<std::atomic<float>, parameters.size()> values;
     std::array<float, parameters.size()> applied{};
     std::atomic<float> flam{0.4f};    // 0..1 = 5..40 ms
@@ -107,9 +117,21 @@ struct State {
     std::atomic<bool> eco{false};     // QUALITY ECO: no 2x oversampling
     double rate = 44100;
     bool prepared = false;
+    // audio thread
     double last[kInputs] = {};
-    std::vector<Hit> hits, flams;
-    std::vector<float> left, right;
+    // audio thread -> render thread
+    std::atomic<int64_t> inPos{0};    // input samples received
+    std::array<Hit, kQueue> queue{};
+    std::atomic<uint32_t> qHead{0}, qTail{0};
+    // render thread -> audio thread
+    std::atomic<int64_t> outPos{0};   // samples rendered
+    std::vector<float> ringL = std::vector<float>(size_t(kRing)), ringR = std::vector<float>(size_t(kRing));
+    // render thread
+    std::thread renderer;
+    std::atomic<bool> running{false};
+    std::vector<Hit> pending;
+    std::vector<float> tmpL = std::vector<float>(256), tmpR = std::vector<float>(256);
+    std::atomic<long> underruns{0};
 
     State() {
         engine.setParallel(parallel->workers() > 0 ? parallel.get() : nullptr);
@@ -119,10 +141,69 @@ struct State {
             values[i].store(float(defaults.*parameters[i].member), std::memory_order_relaxed);
             applied[i] = -1.f; // pushed on the first block
         }
-        hits.reserve(256);
-        flams.reserve(64);
+        pending.reserve(kQueue);
     }
+    ~State() { stop(); }
+    void push(int64_t at, int input, bool accent) { // audio thread
+        const uint32_t h = qHead.load(std::memory_order_relaxed);
+        if (h - qTail.load(std::memory_order_acquire) >= kQueue) return; // full: drop
+        queue[h % kQueue] = {at, input, accent};
+        qHead.store(h + 1, std::memory_order_release);
+    }
+    void stop() {
+        running.store(false);
+        if (renderer.joinable()) renderer.join();
+    }
+    void start();
+    void renderLoop();
 };
+
+int velocityOf(const State& s, bool accent);
+
+void State::start() {
+    running.store(true);
+    renderer = std::thread([this] { workerStart(0); renderLoop(); });
+}
+
+void State::renderLoop() {
+    while (running.load(std::memory_order_relaxed)) {
+        // take the queued hits, kept in time order
+        uint32_t t = qTail.load(std::memory_order_relaxed);
+        const uint32_t h = qHead.load(std::memory_order_acquire);
+        for (; t != h; ++t) {
+            const Hit hit = queue[t % kQueue];
+            auto at = std::upper_bound(pending.begin(), pending.end(), hit.at, [](int64_t v, const Hit& e) { return v < e.at; });
+            pending.insert(at, hit);
+        }
+        qTail.store(t, std::memory_order_release);
+        int64_t o = outPos.load(std::memory_order_relaxed);
+        const int64_t avail = inPos.load(std::memory_order_acquire);
+        if (o >= avail) { std::this_thread::sleep_for(std::chrono::microseconds(150)); continue; }
+        const NoDenormals guard;
+        std::lock_guard<std::mutex> lock(mutex);
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            const float v = values[i].load(std::memory_order_relaxed);
+            if (v != applied[i]) { engine.control(i, v); applied[i] = v; }
+        }
+        const int64_t end = std::min(avail, o + 64);
+        size_t fired = 0;
+        while (o < end) {
+            while (fired < pending.size() && pending[fired].at <= o) {
+                engine.note(kNote[pending[fired].input], velocityOf(*this, pending[fired].accent));
+                ++fired;
+            }
+            int64_t next = end;
+            if (fired < pending.size()) next = std::min(next, pending[fired].at);
+            next = std::max(next, o + 1);
+            const int n = int(next - o);
+            engine.render(tmpL.data(), tmpR.data(), n);
+            for (int i = 0; i < n; ++i) { ringL[size_t((o + i) & (kRing - 1))] = tmpL[size_t(i)]; ringR[size_t((o + i) & (kRing - 1))] = tmpR[size_t(i)]; }
+            o = next;
+            outPos.store(o, std::memory_order_release);
+        }
+        pending.erase(pending.begin(), pending.begin() + long(fired));
+    }
+}
 
 struct External {
     t_pxobject object;
@@ -146,7 +227,6 @@ void control(External* x, t_symbol*, long count, t_atom* atoms) {
             if (s.prepared) {
                 s.engine.prepare(s.rate);
                 for (auto& a : s.applied) a = -1.f;
-                s.flams.clear();
             }
         } catch (const std::exception& e) {
             object_error(reinterpret_cast<t_object*>(x), "Could not switch QUALITY: %s", e.what());
@@ -174,27 +254,14 @@ int velocityOf(const State& s, bool accent) {
 
 void perform(External* x, t_object*, double** ins, long, double** outs, long, long frames, long, void*) {
     State& s = *x->state;
-    const NoDenormals guard;
-    std::unique_lock<std::mutex> lock(s.mutex, std::try_to_lock);
-    if (!lock.owns_lock() || !s.prepared) {
+    if (!s.running.load(std::memory_order_relaxed)) {
         std::fill_n(outs[0], frames, 0.0);
         std::fill_n(outs[1], frames, 0.0);
         return;
     }
-    for (size_t i = 0; i < parameters.size(); ++i) {
-        const float v = s.values[i].load(std::memory_order_relaxed);
-        if (v != s.applied[i]) { s.engine.control(i, v); s.applied[i] = v; }
-    }
-
-    // this block's hits: flam main hits now due, then the trigger inlets
-    auto& hits = s.hits;
-    hits.clear();
-    for (size_t f = 0; f < s.flams.size();) {
-        Hit& fl = s.flams[f];
-        if (fl.at < frames) { hits.push_back(fl); s.flams.erase(s.flams.begin() + long(f)); }
-        else { fl.at -= frames; ++f; }
-    }
-    const long flamSamples = std::max<long>(1, std::lround((5.0 + 35.0 * s.flam.load(std::memory_order_relaxed)) * 0.001 * s.rate));
+    // queue this block's triggers at their exact input sample
+    const int64_t base = s.inPos.load(std::memory_order_relaxed);
+    const int64_t flamSamples = std::max<int64_t>(1, std::llround((5.0 + 35.0 * s.flam.load(std::memory_order_relaxed)) * 0.001 * s.rate));
     for (int v = 0; v < kInputs; ++v) {
         const double* in = ins[v];
         double prev = s.last[v];
@@ -203,56 +270,46 @@ void perform(External* x, t_object*, double** ins, long, double** outs, long, lo
             if (t != 0 && prev == 0) {
                 const bool flam = t >= 3.0;
                 const bool accent = (flam ? t - 4.0 : t) >= 0.75;
-                if (flam) {
-                    hits.push_back({i, v, false});
-                    const long at = i + flamSamples;
-                    if (at < frames) hits.push_back({at, v, accent});
-                    else if (s.flams.size() < 64) s.flams.push_back({at - frames, v, accent});
-                } else {
-                    hits.push_back({i, v, accent});
-                }
+                if (flam) { s.push(base + i, v, false); s.push(base + i + flamSamples, v, accent); }
+                else s.push(base + i, v, accent);
             }
             prev = t;
         }
         s.last[v] = prev;
     }
-    std::stable_sort(hits.begin(), hits.end(), [](const Hit& a, const Hit& b) { return a.at < b.at; });
-
-    // render, splitting the block at each hit
-    long pos = 0;
-    size_t h = 0;
-    float* l = s.left.data();
-    float* r = s.right.data();
-    while (pos < frames) {
-        while (h < hits.size() && hits[h].at <= pos) {
-            s.engine.note(kNote[hits[h].input], velocityOf(s, hits[h].accent));
-            ++h;
-        }
-        long end = h < hits.size() ? std::min<long>(frames, hits[h].at) : frames;
-        end = std::max(end, pos + 1);
-        s.engine.render(l + pos, r + pos, int(end - pos));
-        pos = end;
+    s.inPos.store(base + frames, std::memory_order_release);
+    // play what the render thread finished, kAhead samples behind
+    const int64_t ready = s.outPos.load(std::memory_order_acquire);
+    const int64_t from = base - kAhead;
+    bool late = false;
+    for (long i = 0; i < frames; ++i) {
+        const int64_t k = from + i;
+        if (k < 0 || k >= ready) { outs[0][i] = 0; outs[1][i] = 0; late = late || k >= 0; continue; }
+        outs[0][i] = s.ringL[size_t(k & (kRing - 1))];
+        outs[1][i] = s.ringR[size_t(k & (kRing - 1))];
     }
-    for (long i = 0; i < frames; ++i) { outs[0][i] = l[i]; outs[1][i] = r[i]; }
+    if (late) s.underruns.fetch_add(1, std::memory_order_relaxed);
 }
 
-void dsp64(External* x, t_object* chain, short*, double rate, long maxFrames, long) {
+void dsp64(External* x, t_object* chain, short*, double rate, long, long) {
     State& s = *x->state;
+    s.stop();
     try {
         std::lock_guard<std::mutex> lock(s.mutex);
         const bool rateChanged = !s.prepared || rate != s.rate;
         s.rate = rate;
-        s.left.assign(size_t(std::max<long>(maxFrames, 4096)), 0.f);
-        s.right.assign(size_t(std::max<long>(maxFrames, 4096)), 0.f);
         if (rateChanged) s.engine.prepare(rate);
         for (auto& a : s.applied) a = -1.f;
         for (double& v : s.last) v = 0;
-        s.flams.clear();
+        s.inPos.store(0); s.outPos.store(0);
+        s.qTail.store(s.qHead.load());
+        s.pending.clear();
         s.prepared = true;
     } catch (const std::exception& e) {
         object_error(reinterpret_cast<t_object*>(x), "DSP initialization failed: %s", e.what());
         return;
     }
+    s.start();
     dsp_add64(chain, reinterpret_cast<t_object*>(x), reinterpret_cast<t_perfroutine64>(perform), 0, nullptr);
 }
 
@@ -267,6 +324,7 @@ void assist(External*, void*, long io, long index, char* text) {
 
 void destroy(External* x) {
     dsp_free(&x->object);
+    if (x->state) x->state->stop();
     delete x->state;
 }
 

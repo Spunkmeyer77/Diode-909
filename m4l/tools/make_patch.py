@@ -85,6 +85,7 @@ BANKS = [('Main', ['d_ac', 'd_flam', 'd_swing', 'd_vol', 'd_rs_lvl', 'd_cp_lvl',
 banks = {str(n): {'index': n, 'name': name, 'parameters': [long.get(v, '-') for v in vs]} for n, (name, vs) in enumerate(BANKS)}
 P['parameters'] = {k: v for k, v in P['parameters'].items() if not k.startswith('d_')}
 P['parameters'].update(params); P['parameters']['parameterbanks'] = banks
+P['latency'] = 512  # samples: diode909~ renders 512 samples ahead (kAhead); Live compensates
 P['dependency_cache'] = [{'name': 'diode909_seq.js', 'bootpath': '.', 'type': 'TEXT', 'implicit': 1},
                          {'name': 'diode909_engine.js', 'bootpath': '.', 'type': 'TEXT', 'implicit': 1},
                          {'name': 'diode909~.mxo', 'type': 'iLaX'}]
