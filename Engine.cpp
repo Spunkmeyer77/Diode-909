@@ -97,6 +97,8 @@ void Engine::note(int note, int velocity)
 	const double x0 = 8.0 * k, x1 = k == 15 ? 127.0 : 8.0 * (k + 1);
 	const int code = std::clamp(int(std::lround(law[k] + (law[k + 1] - law[k]) * (velocity - x0) / (x1 - x0))), 0, 63);
 	m_board.write(kDac[v], uint8_t(code << 1));
+	if (Voice(v) == Voice::SD) // RING's fade counts from the hit
+		m_board.sdHit();
 	if (Voice(v) == Voice::HH) // CLOSED/OPEN: high for the closed hat
 		m_board.write(10, uint8_t((m_board.latch(10) & ~0x08) | (note == 46 ? 0 : 0x08)));
 	m_board.write(kTrigReg[v], uint8_t(m_board.latch(kTrigReg[v]) | (1u << kTrigBit[v])));
@@ -104,7 +106,7 @@ void Engine::note(int note, int velocity)
 	m_asleep = false;
 }
 
-const std::array<Parameter, 27> parameters{{
+const std::array<Parameter, 28> parameters{{
     {"bd_tune", &tr909::Controls::bdTune},
     {"bd_level", &tr909::Controls::bdLevel},
     {"bd_attack", &tr909::Controls::bdAttack},
@@ -113,6 +115,7 @@ const std::array<Parameter, 27> parameters{{
     {"sd_level", &tr909::Controls::sdLevel},
     {"sd_tone", &tr909::Controls::sdTone},
     {"sd_snappy", &tr909::Controls::sdSnappy},
+    {"sd_ring", &tr909::Controls::sdRing},
     {"lt_tune", &tr909::Controls::ltTune},
     {"lt_level", &tr909::Controls::ltLevel},
     {"lt_decay", &tr909::Controls::ltDecay},

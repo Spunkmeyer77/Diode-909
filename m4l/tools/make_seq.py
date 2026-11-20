@@ -26,7 +26,7 @@ rep('for (var i = 1; i < NI; i++) if (NOTES[i] === p) {', 'for (var i = 1; i < N
 # knobs per instrument: 909 front panel
 groups = [["d_ac", "d_flam", "d_eco", "d_swing", "d_vol"],
           ["d_bd_lvl", "d_bd_tune", "d_bd_attack", "d_bd_decay"],
-          ["d_sd_lvl", "d_sd_tune", "d_sd_tone", "d_sd_snappy"],
+          ["d_sd_lvl", "d_sd_tune", "d_sd_tone", "d_sd_snappy", "d_sd_ring"],
           ["d_lt_lvl", "d_lt_tune", "d_lt_decay"], ["d_mt_lvl", "d_mt_tune", "d_mt_decay"], ["d_ht_lvl", "d_ht_tune", "d_ht_decay"],
           ["d_rs_lvl"], ["d_cp_lvl"], ["d_hh_lvl", "d_ch_decay"], ["d_hh_lvl", "d_oh_decay"],
           ["d_cr_lvl", "d_cr_tune"], ["d_rd_lvl", "d_rd_tune"], [], [], [], []]

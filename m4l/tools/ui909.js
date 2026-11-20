@@ -65,14 +65,18 @@ function sendDial(name) { var o = this.patcher ? this.patcher.getnamed(name) : n
 var X0 = 8, GW = 100, KS = 24;
 var KG = [["TOTAL ACCENT", [["ACCENT", "d_ac"], ["FLAM", "d_flam"], ["QUALITY", "d_eco"], ["SWING", "d_swing"]], [0, 0]],
           ["BASS DRUM", [["TUNE", "d_bd_tune"], ["LEVEL", "d_bd_lvl"], ["ATTACK", "d_bd_attack"], ["DECAY", "d_bd_decay"]], [1, 1]],
-          ["SNARE DRUM", [["TUNE", "d_sd_tune"], ["LEVEL", "d_sd_lvl"], ["TONE", "d_sd_tone"], ["SNAPPY", "d_sd_snappy"]], [2, 2]],
+          ["SNARE DRUM", [["TUNE", "d_sd_tune"], ["LEVEL", "d_sd_lvl"], ["TONE", "d_sd_tone"], ["SNAPPY", "d_sd_snappy"], ["RING", "d_sd_ring"]], [2, 2]],
           ["LOW TOM", [["TUNE", "d_lt_tune"], ["LEVEL", "d_lt_lvl"], ["DECAY", "d_lt_decay"], null], [3, 3]],
           ["MID TOM", [["TUNE", "d_mt_tune"], ["LEVEL", "d_mt_lvl"], ["DECAY", "d_mt_decay"], null], [4, 4]],
           ["HI TOM", [["TUNE", "d_ht_tune"], ["LEVEL", "d_ht_lvl"], ["DECAY", "d_ht_decay"], null], [5, 5]],
           ["RIM SHOT  HAND CLAP", [["LEVEL", "d_rs_lvl"], ["LEVEL", "d_cp_lvl"], null, null], [6, 7]],
           ["HI HAT", [null, ["LEVEL", "d_hh_lvl"], ["CH DECAY", "d_ch_decay"], ["OH DECAY", "d_oh_decay"]], [8, 9]],
           ["CYMBAL", [["CR LEVEL", "d_cr_lvl"], ["RD LEVEL", "d_rd_lvl"], ["CR TUNE", "d_cr_tune"], ["RD TUNE", "d_rd_tune"]], [10, 11]]];
-function knobPos(g, k) { var x = X0 + g * GW; return [x + GW / 2 + (k % 2 === 0 ? -23 : 23), k < 2 ? 37 : 72]; }
+function knobPos(g, k) {
+    var x = X0 + g * GW;
+    if (KG[g][1].length === 5 && k >= 2) return [x + GW / 2 + (k - 3) * 31, 72]; // three knobs on the bottom row
+    return [x + GW / 2 + (k % 2 === 0 ? -23 : 23), k < 2 ? 37 : 72];
+}
 function headRect(g) { return [X0 + g * GW + 2, 4, GW - 4, 10]; }
 var MS_GRID = false; // false: mute/solo as LEDs in the navy header bars
 function msLed(v) { // the header LED of instrument v (1..11)
@@ -168,7 +172,7 @@ function paint() {
             else { font(1, g === 6 ? 5.8 : 6.6); for (var h = 0; h < 2; h++) textC(parts[h], hr[0] + hr[2] * (h ? 0.7 : 0.3), hr[1] + 7.4, inst === sel[h] ? WHITE : ORANGE); }
         }
         if (g) { col(INK); mgraphics.set_line_width(1); mgraphics.move_to(x + 0.5, 16); mgraphics.line_to(x + 0.5, 86); mgraphics.stroke(); }
-        for (var k = 0; k < 4; k++) {
+        for (var k = 0; k < KG[g][1].length; k++) {
             var it = KG[g][1][k]; if (!it) continue;
             var p = knobPos(g, k), d = DV[it[1]];
             font(1, 6.2); textC(it[0], p[0], p[1] - KS / 2 - 4, INK);
@@ -276,10 +280,10 @@ var led_rec_dummy = 0;
 
 // ---- mouse ----
 function knobAt(x, y) {
-    for (var g = 0; g < KG.length; g++) for (var k = 0; k < 4; k++) {
+    for (var g = 0; g < KG.length; g++) for (var k = 0; k < KG[g][1].length; k++) {
         var it = KG[g][1][k]; if (!it) continue;
         var p = knobPos(g, k), dx = x - p[0], dy = y - p[1];
-        if (dx * dx + dy * dy <= 15 * 15) return it[1];
+        if (dx * dx + dy * dy <= 14 * 14) return it[1];
     }
     var vx = x - VOL[0], vy = y - VOL[1];
     if (vx * vx + vy * vy <= (VOL[2] / 2 + 3) * (VOL[2] / 2 + 3)) return "d_vol";

@@ -775,6 +775,10 @@ struct VoiceBoard::Impl {
 	std::vector<double> noiseBuf;
 	std::vector<double> noiseSub; // the noise in kNoiseSub parts of each sample
 	std::array<std::vector<double>, kVoices> jackBuf;
+	// RING: 120 ms after a hit the snare's jack fades around its resting level, faster as the knob
+	// goes down; at 1 nothing changes (the circuit's own tail)
+	double ringRate = 96000, sdRing = 1.0, sdRest = 0.0;
+	int64_t sdSince = int64_t(1) << 30;
 	int blockLength = 0;
 	Parallel *parallel = nullptr;
 	void stepVoice(int v, double *s, int j);
@@ -848,6 +852,7 @@ void VoiceBoard::prepare(double hostRate)
 	const int stages = m_factor >= 8 ? 3 : m_factor >= 4 ? 2 : m_factor >= 2 ? 1 : 0;
 	m_factor = 1 << stages;
 	m_rate = hostRate * m_factor;
+	m_impl->ringRate = m_rate;
 	m_decL.setStages(stages);
 	m_decR.setStages(stages);
 	m_workL.assign(size_t(m_factor), 0.0f);
@@ -1090,6 +1095,7 @@ void VoiceBoard::setControls(const Controls &c)
 	set(Voice::SD, "level", "sdLevel", c.sdLevel);
 	set(Voice::SD, "tone", "sdTone", c.sdTone);
 	set(Voice::SD, "snappy", "sdSnappy", c.sdSnappy);
+	m_impl->sdRing = std::clamp(c.sdRing, 0.0, 1.0);
 	set(Voice::LT, "tune", "ltTune", c.ltTune);
 	set(Voice::LT, "level", "ltLevel", c.ltLevel);
 	set(Voice::LT, "decay", "ltDecay", c.ltDecay);
@@ -1151,7 +1157,16 @@ void VoiceBoard::Impl::stepVoice(int v, double *s, int j)
 {
 	s[sNoiseOf[size_t(v)]] = noiseBuf[size_t(j)];
 	units[size_t(v)].step(s, window, &noiseSub[size_t(j) * kNoiseSub]);
-	jackBuf[size_t(v)][size_t(j)] = s[sJack[size_t(v)]];
+	double jack = s[sJack[size_t(v)]];
+	if (v == int(Voice::SD)) {
+		const double t = double(sdSince++) / ringRate;
+		if (t > 0.5) sdRest += (jack - sdRest) * (1.0 / (0.25 * ringRate)); // resting level, between hits
+		if (sdRing < 0.999 && t > 0.12) {
+			const double tau = 0.006 * std::pow(10.0, 2.2 * sdRing); // 6 ms .. 0.95 s (1: no fade)
+			jack = sdRest + (jack - sdRest) * std::exp(-(t - 0.12) / tau);
+		}
+	}
+	jackBuf[size_t(v)][size_t(j)] = jack;
 	if (probing)
 		capture(v, j);
 }
@@ -1597,6 +1612,11 @@ std::vector<VoiceBoard::SolverStats> VoiceBoard::solverStats() const
 		for (const auto &b : im.unit(u).blocks)
 			r.push_back({u, b.c.name(), b.c.stats()});
 	return r;
+}
+
+void VoiceBoard::sdHit()
+{
+	m_impl->sdSince = 0;
 }
 
 } // namespace tr909

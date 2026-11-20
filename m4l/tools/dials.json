@@ -134,6 +134,16 @@
   "msg": "control sd_snappy"
  },
  {
+  "var": "d_sd_ring",
+  "long": "SD Ring",
+  "short": "Ring",
+  "lo": 0,
+  "hi": 1,
+  "init": 1.0,
+  "unit": 8,
+  "msg": "control sd_ring"
+ },
+ {
   "var": "d_lt_lvl",
   "long": "LT Level",
   "short": "Level",

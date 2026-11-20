@@ -20,6 +20,7 @@ constexpr int kVoices = int(Voice::Count);
 struct Controls {
 	double bdTune = 0.5, bdLevel = 0.75, bdAttack = 0.5, bdDecay = 0.5;
 	double sdTune = 0.5, sdLevel = 0.75, sdTone = 0.5, sdSnappy = 0.5;
+	double sdRing = 1.0; // RING (DIODE 909, not on the 909): fades the snare's tail; 1 = the original
 	double ltTune = 0.5, ltLevel = 0.75, ltDecay = 0.5;
 	double mtTune = 0.5, mtLevel = 0.75, mtDecay = 0.5;
 	double htTune = 0.5, htLevel = 0.75, htDecay = 0.5;
@@ -129,6 +130,8 @@ public:
 	int factor() const { return m_factor; }
 	// ECO: no 2x oversampling of the board below 80 kHz (about 40 % less CPU); call prepare() after.
 	void setEco(bool on) { m_eco = on; }
+	// the snare was triggered (RING's fade counts from here)
+	void sdHit();
 	bool eco() const { return m_eco; }
 	std::string blockReport() const; // tools: each circuit's steps, Newton iterations, linear steps
 	// What each circuit's solver did since prepare() (circuit::Circuit::Stats), for tools: one entry

@@ -27,4 +27,4 @@ struct Parameter {
     const char *name;
     double tr909::Controls::*member;
 };
-extern const std::array<Parameter, 27> parameters;
+extern const std::array<Parameter, 28> parameters;
