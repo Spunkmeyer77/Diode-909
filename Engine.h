@@ -12,6 +12,8 @@ public:
     void setRoms(const tr909::SampleRoms &roms);
     void setParallel(tr909::Parallel *p) { m_board.setParallel(p); }
     void setEco(bool on) { m_board.setEco(on); }
+    bool boardAsleep() const { return m_board.asleep(); }
+    std::string report() const { return m_board.blockReport(); } // tools (TR909_PROFILE)
 private:
     static int voiceOfNote(int note);
     tr909::VoiceBoard m_board;

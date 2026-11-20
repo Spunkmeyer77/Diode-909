@@ -86,9 +86,12 @@ void workerStart(int) {
 #endif
 }
 
+// Helper threads besides Live's audio thread. A voice always renders on one thread, and the 909's
+// snare and toms are heavy (each up to about half a core on an M1), so on 8-core Macs (M1: four
+// performance cores) three helpers let four heavy voices render at once.
 int workerCount() {
     const unsigned cores = std::thread::hardware_concurrency();
-    return cores >= 4 ? 2 : (cores >= 2 ? 1 : 0);
+    return cores >= 8 ? 3 : cores >= 4 ? 2 : (cores >= 2 ? 1 : 0);
 }
 
 struct Hit { long at; int input; bool accent; };
