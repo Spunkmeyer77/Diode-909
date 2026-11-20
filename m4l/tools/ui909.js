@@ -101,6 +101,7 @@ var PX = KX + 16 * (KW + KGAP) + 8;
 var PATKEYS = true, PATCOLS = 8, PATCW = 36.5, PATRH = 35, PATY = 98, PATLABEL = [PX + 143, 95];
 function patRect(p) { return [PX + (p % PATCOLS) * PATCW, PATY + Math.floor(p / PATCOLS) * PATRH, PATB, PATB]; }
 var DX = PX + 92;
+var MIDIB = [RX + 118, 33, 30, 11]; // MIDI print button, above the note display, left of VOLUME
 var VALS = [[RX + 4, 57, 44, 22], [RX + 54, 57, 44, 22], [RX + 104, 57, 58, 22]];
 function setInst(i) { if (i >= 0 && i < NV) { inst = i; mgraphics.redraw(); } }
 
@@ -163,6 +164,36 @@ function qualitySwitch(cx, cy, eco) {
     font(1, 6.4); textC("HQ", x + w / 2, y + 8, eco ? [0.6, 0.6, 0.62] : WHITE); textC("ECO", x + w * 1.5, y + 8, eco ? AMBER : [0.6, 0.6, 0.62]);
 }
 
+function midiButton(lit) { // same style as the HQ/ECO switch
+    var r = MIDIB; fillR([r[0] - 1, r[1] - 1, r[2] + 2, r[3] + 2], BLACK);
+    fillR(r, lit ? NAVY : [0.30, 0.30, 0.32]); font(1, 6.4); textC("MIDI", r[0] + r[2] / 2, r[1] + 8, lit ? AMBER : WHITE);
+}
+// MIDI print: writes the pattern (Shift: the whole chain) as a MIDI clip into the first empty clip slot of this track
+function printMidi(all) {
+    var list = all && chain.length ? chain : [editPat], t0 = 0, notes = [];
+    for (var c = 0; c < list.length; c++) {
+        var pp = list[c], L = plen[pp];
+        for (var s2 = 0; s2 < L; s2++) {
+            var acc = pats[pp][AC][s2] ? 1 : 0;
+            for (var i2 = 1; i2 < NV; i2++) if (NOTES[i2] >= 0 && pats[pp][i2][s2]) notes.push([NOTES[i2], t0 + s2 * 0.25, 0.25, acc ? 127 : 90]);
+        }
+        t0 += L * 0.25;
+    }
+    if (t0 <= 0) return;
+    try {
+        var dev = new LiveAPI("this_device"), trk = new LiveAPI(dev.path.replace(/"/g, "").replace(/ devices \d+$/, ""));
+        var n = trk.getcount("clip_slots"), slot = null;
+        for (var k3 = 0; k3 < n; k3++) { var cs = new LiveAPI(trk.unquotedpath + " clip_slots " + k3); if (+cs.get("has_clip") === 0) { slot = cs; break; } }
+        if (!slot) { post("DIODE 909: no empty clip slot on this track\n"); return; }
+        slot.call("create_clip", t0);
+        var lc = new LiveAPI(slot.unquotedpath + " clip");
+        lc.set("name", list.length > 1 ? "DIODE 909 chain" : "DIODE 909 pattern " + (editPat + 1));
+        lc.call("set_notes"); lc.call("notes", notes.length);
+        for (var q3 = 0; q3 < notes.length; q3++) lc.call("note", notes[q3][0], notes[q3][1].toFixed(4), notes[q3][2], notes[q3][3], 0);
+        lc.call("done");
+    } catch (e) { post("DIODE 909: MIDI print failed " + e + "\n"); }
+    doFlash("MIDI");
+}
 // ---- paint ----
 function paint() {
     fillR([0, 0, W, H], PANEL);
@@ -220,6 +251,7 @@ function paint() {
     knob(VOL[0], VOL[1], VOL[2], toN(DV["d_vol"]), true);
     if (dragMode === "vknob" && vName === "d_vol") { var tv = fmtVal(DV["d_vol"]); font(1, 7); textC(tv, VOL[0], VOL[1] + VOL[2] / 2 + 9.5, NAVY); }
 
+    midiButton(!!flash["MIDI"]);
     // left block
     col(INK); mgraphics.set_line_width(1); rect([4.5, 90.5, 92, 75]); mgraphics.stroke();
     for (var k2 = 0; k2 < 4; k2++) {
@@ -343,6 +375,7 @@ function onclick(x, y, but, cmd, shift, capslock, option) {
         if (chain.length) { chain = []; sendChain(); notifyclients(); }
         selectPattern(p); return;
     }
+    if (inR(x, y, [MIDIB[0] - 2, MIDIB[1] - 2, MIDIB[2] + 4, MIDIB[3] + 4])) { printMidi(shift); return; }
     for (var k = 0; k < 4; k++) if (inR(x, y, [leftRect(k)[0] - 4, leftRect(k)[1] - 2, 28, 34])) {
         if (k === 0) { rec = rec ? 0 : 1; mgraphics.redraw(); }
         else if (k === 1) { if (shift) { for (var q2 = 0; q2 < NS; q2++) pats[editPat][inst][q2] = 0; } else pats[editPat] = emptyPat(); doFlash("CLEAR"); changed(); }
