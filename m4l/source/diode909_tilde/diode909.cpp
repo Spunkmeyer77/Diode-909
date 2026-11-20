@@ -232,7 +232,7 @@ void dsp64(External* x, t_object* chain, short*, double rate, long maxFrames, lo
         object_error(reinterpret_cast<t_object*>(x), "DSP initialization failed: %s", e.what());
         return;
     }
-    object_method(chain, gensym("dsp_add64"), x, perform, 0, nullptr);
+    dsp_add64(chain, reinterpret_cast<t_object*>(x), reinterpret_cast<t_perfroutine64>(perform), 0, nullptr);
 }
 
 void assist(External*, void*, long io, long index, char* text) {
