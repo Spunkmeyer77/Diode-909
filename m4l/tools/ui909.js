@@ -181,7 +181,7 @@ function paint() {
         for (var k = 0; k < KG[g][1].length; k++) {
             var it = KG[g][1][k]; if (!it) continue;
             var p = knobPos(g, k), d = DV[it[1]];
-            font(1, 6.2); textC(it[0], p[0], p[1] - KS / 2 - 4, INK);
+            font(1, 6.2); textC(it[0], p[0], p[1] - KS / 2 - 6, INK);
             if (d && d.unit === 12) { qualitySwitch(p[0], p[1], d.val >= 0.5); continue; }
             knob(p[0], p[1], KS, d ? toN(d) : 0.5, false);
             if (dragMode === "vknob" && vName === it[1] && d) { // value while turning
@@ -285,7 +285,7 @@ function paint() {
         fillR(vr, DISP); col(BLACK); mgraphics.set_line_width(1); rect(vr); mgraphics.stroke();
         font(1, 11); textC(vals[q][1], vr[0] + vr[2] / 2, vr[1] + 15.5, RED);
     }
-    font(0, 5); textR("v" + VERSION, W - 6, 165, DIM);
+    font(0, 5); textR("v" + VERSION, W - 6, 165, INK);
     led_rec_dummy = 0;
 }
 var led_rec_dummy = 0;
