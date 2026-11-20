@@ -144,9 +144,15 @@ function stepKeyPressedLit(r, c) { // playhead on a set step: pressed key with i
     stepKey(r, 3); var w = LEDWIN(r); w = [w[0], w[1] + 1.2, w[2], w[3]];
     col(c, 0.35); rect([w[0] - 2, w[1] - 2, w[2] + 4, w[3] + 4]); mgraphics.fill(); fillR(w, c);
 }
-function button(r, lit, pressed) {
-    if (!USE_ART) { btnCode(r, lit, pressed); return; }
-    drawArt(lit ? "btnLit" : (pressed ? "btnPressed" : "btnUnlit"), r[0], r[1], r[2], r[3], 0);
+function button(r, lit, pressed, led) {
+    if (!USE_ART) { btnCode(r, lit || pressed, pressed); return; }
+    drawArt(pressed ? "btnPressed" : "btnUnlit", r[0], r[1], r[2], r[3], 0);
+    if (lit || (pressed && led)) { // the cap's LED, lit: big enough to read at this size
+        var cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2 + (pressed ? 0.6 : 0), d = Math.max(3.2, r[2] * 0.2);
+        col([0.95, 0.25, 0.18], 0.28); mgraphics.ellipse(cx - d, cy - d, 2 * d, 2 * d); mgraphics.fill();
+        col([0.95, 0.25, 0.18]); mgraphics.ellipse(cx - d / 2, cy - d / 2, d, d); mgraphics.fill();
+        col([1, 0.85, 0.75], 0.8); mgraphics.ellipse(cx - d / 5, cy - d / 4, d / 2.6, d / 3); mgraphics.fill();
+    }
 }
 
 // QUALITY: HQ / ECO switch (two lit segments)
@@ -218,7 +224,8 @@ function paint() {
     col(INK); mgraphics.set_line_width(1); rect([4.5, 90.5, 92, 75]); mgraphics.stroke();
     for (var k2 = 0; k2 < 4; k2++) {
         var r = leftRect(k2);
-        button(r, k2 === 0 && rec, !!flash[LEFTN[k2]]);
+        button(r, k2 === 0 && rec, !!flash[LEFTN[k2]], true);
+        if (k2 === 0 && rec) { font(1, 5.8); textC(LEFTN[k2], r[0] + r[2] / 2, r[1] + 27, ORANGE); continue; }
         font(1, 5.8); textC(LEFTN[k2], r[0] + r[2] / 2, r[1] + 27, INK);
     }
 

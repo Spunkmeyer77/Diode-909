@@ -44,7 +44,7 @@
 
 namespace {
 
-constexpr const char* kVersion = "1.2.4";
+constexpr const char* kVersion = "1.2.5";
 constexpr int kInputs = 11;
 // inlet -> MIDI note understood by Engine::note
 constexpr int kNote[kInputs] = {36, 38, 43, 47, 50, 37, 39, 42, 46, 49, 51};

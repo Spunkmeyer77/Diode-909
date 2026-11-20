@@ -17,7 +17,7 @@ var POS = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]];
 var ALT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 function posOf(i) { for (var p = 0; p < POS.length; p++) for (var a = 0; a < POS[p].length; a++) if (POS[p][a] === i) return [p, a]; return [0, 0]; }
 function posLabel(p) { return POS[p].length > 1 ? NAMES[POS[p][0]] + "\u00b7" + NAMES[POS[p][1]] : NAMES[POS[p][0]]; }
-var VERSION = "1.2.4";
+var VERSION = "1.2.5";
 var NOTES = [-1, 36, 38, 43, 47, 50, 37, 39, 42, 46, 49, 51, -1, -1, -1, -1]; // AC = accent
 
 var pats = [], plen = [];
@@ -189,9 +189,15 @@ function stepKeyPressedLit(r, c) { // playhead on a set step: pressed key with i
     stepKey(r, 3); var w = LEDWIN(r); w = [w[0], w[1] + 1.2, w[2], w[3]];
     col(c, 0.35); rect([w[0] - 2, w[1] - 2, w[2] + 4, w[3] + 4]); mgraphics.fill(); fillR(w, c);
 }
-function button(r, lit, pressed) {
-    if (!USE_ART) { btnCode(r, lit, pressed); return; }
-    drawArt(lit ? "btnLit" : (pressed ? "btnPressed" : "btnUnlit"), r[0], r[1], r[2], r[3], 0);
+function button(r, lit, pressed, led) {
+    if (!USE_ART) { btnCode(r, lit || pressed, pressed); return; }
+    drawArt(pressed ? "btnPressed" : "btnUnlit", r[0], r[1], r[2], r[3], 0);
+    if (lit || (pressed && led)) { // the cap's LED, lit: big enough to read at this size
+        var cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2 + (pressed ? 0.6 : 0), d = Math.max(3.2, r[2] * 0.2);
+        col([0.95, 0.25, 0.18], 0.28); mgraphics.ellipse(cx - d, cy - d, 2 * d, 2 * d); mgraphics.fill();
+        col([0.95, 0.25, 0.18]); mgraphics.ellipse(cx - d / 2, cy - d / 2, d, d); mgraphics.fill();
+        col([1, 0.85, 0.75], 0.8); mgraphics.ellipse(cx - d / 5, cy - d / 4, d / 2.6, d / 3); mgraphics.fill();
+    }
 }
 
 // QUALITY: HQ / ECO switch (two lit segments)
@@ -263,7 +269,8 @@ function paint() {
     col(INK); mgraphics.set_line_width(1); rect([4.5, 90.5, 92, 75]); mgraphics.stroke();
     for (var k2 = 0; k2 < 4; k2++) {
         var r = leftRect(k2);
-        button(r, k2 === 0 && rec, !!flash[LEFTN[k2]]);
+        button(r, k2 === 0 && rec, !!flash[LEFTN[k2]], true);
+        if (k2 === 0 && rec) { font(1, 5.8); textC(LEFTN[k2], r[0] + r[2] / 2, r[1] + 27, ORANGE); continue; }
         font(1, 5.8); textC(LEFTN[k2], r[0] + r[2] / 2, r[1] + 27, INK);
     }
 
@@ -411,7 +418,7 @@ function ondrag(x, y, but, cmd, shift, capslock, option) {
 }
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-function doFlash(k) { flash[k] = 1; mgraphics.redraw(); var t = new Task(function () { flash[k] = 0; mgraphics.redraw(); }); t.schedule(150); }
+function doFlash(k) { flash[k] = 1; mgraphics.redraw(); var t = new Task(function () { flash[k] = 0; mgraphics.redraw(); }); t.schedule(250); }
 
 function selectPattern(p) {
     editPat = p;
