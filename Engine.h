@@ -1,5 +1,6 @@
 #pragma once
 #include "tr909/core/voiceboard.h"
+#include "tr909/core/parallel.h"
 
 class Engine {
 public:
@@ -9,6 +10,7 @@ public:
     void control(size_t index, double value);
     void render(float *left, float *right, int frames);
     void setRoms(const tr909::SampleRoms &roms);
+    void setParallel(tr909::Parallel *p) { m_board.setParallel(p); }
 private:
     static int voiceOfNote(int note);
     tr909::VoiceBoard m_board;

@@ -1,0 +1,78 @@
+name: Build DIODE 909 Max for Live
+# Builds only on a commit whose message contains [release], or a manual run.
+# The repo is public: the ROMs stay encrypted (ROM_KEY secret) and the finished build is uploaded as a
+# password-protected .7z artifact (same password), never as a public release.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  VERSION: 1.0.0
+jobs:
+  mac:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decrypt sample ROMs
+        env: { ROM_KEY: "${{ secrets.ROM_KEY }}" }
+        run: |
+          test -n "$ROM_KEY" || { echo "ROM_KEY secret missing"; exit 1; }
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:ROM_KEY -in roms/tr909-roms.tar.enc | tar -xf - -C roms
+          shasum -a 256 roms/*.ic*
+      - name: Build (universal arm64 + x86_64, macOS 11+)
+        run: bash m4l/build-macos.sh
+      - name: Verify architectures and minimum macOS (must run on macOS 12 Monterey)
+        run: |
+          bin="m4l/build/macos/externals/diode909~.mxo/Contents/MacOS/diode909~"
+          lipo -info "$bin" | tee /dev/stderr | grep -q arm64
+          lipo -info "$bin" | grep -q x86_64
+          for a in arm64 x86_64; do
+            minos=$(otool -arch $a -l "$bin" | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print $2; exit}')
+            echo "$a minos $minos"
+            awk -v v="$minos" 'BEGIN{split(v,p,"."); exit !(p[1]+0 < 11 || (p[1]+0 == 11 && p[2]+0 == 0))}' || { echo "minos $minos is newer than 11.0"; exit 1; }
+          done
+      - name: Zip
+        run: cd m4l/build/macos/externals && ditto -c -k --keepParent "diode909~.mxo" "$GITHUB_WORKSPACE/diode909-$VERSION-macos.zip"
+      - uses: actions/upload-artifact@v4
+        with: { name: mac, path: "diode909-${{ env.VERSION }}-macos.zip", retention-days: 1 }
+  windows:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decrypt sample ROMs
+        shell: bash
+        env: { ROM_KEY: "${{ secrets.ROM_KEY }}" }
+        run: |
+          test -n "$ROM_KEY" || { echo "ROM_KEY secret missing"; exit 1; }
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:ROM_KEY -in roms/tr909-roms.tar.enc | tar -xf - -C roms
+          sha256sum roms/*.ic*
+      - name: Build (x64)
+        shell: cmd
+        run: m4l\build-windows.bat
+      - name: Collect
+        shell: pwsh
+        run: |
+          $f = Get-ChildItem -Recurse m4l/build/windows/externals -Filter *.mxe64 | Select-Object -First 1
+          Copy-Item $f.FullName "diode909~.mxe64"
+      - uses: actions/upload-artifact@v4
+        with: { name: windows, path: "diode909~.mxe64", retention-days: 1 }
+  package:
+    needs: [mac, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { merge-multiple: true, path: dist }
+      - name: Password-protected package
+        env: { ROM_KEY: "${{ secrets.ROM_KEY }}" }
+        run: |
+          cp "m4l/device/DIODE 909.amxd" m4l/code/diode909_seq.js m4l/code/diode909_engine.js \
+             "m4l/docs/DIODE 909 - User Manual.pdf" "m4l/docs/DIODE 909 - Update History.pdf" dist/
+          ls -la dist
+          cd dist && 7z a -t7z -mhe=on -p"$ROM_KEY" "../DIODE-909-$VERSION.7z" . > /dev/null
+      - uses: actions/upload-artifact@v4
+        with: { name: "DIODE-909-${{ env.VERSION }}", path: "DIODE-909-${{ env.VERSION }}.7z", retention-days: 30 }
