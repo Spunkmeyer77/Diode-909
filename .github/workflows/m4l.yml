@@ -67,12 +67,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { merge-multiple: true, path: dist }
-      - name: Password-protected package
+      - name: Password-protected package (one ready folder)
         env: { ROM_KEY: "${{ secrets.ROM_KEY }}" }
         run: |
-          cp "m4l/device/DIODE 909.amxd" m4l/code/diode909_seq.js m4l/code/diode909_engine.js \
-             "m4l/docs/DIODE 909 - User Manual.pdf" "m4l/docs/DIODE 909 - Update History.pdf" dist/
-          ls -la dist
-          cd dist && 7z a -t7z -mhe=on -p"$ROM_KEY" "../DIODE-909-$VERSION.7z" . > /dev/null
+          mkdir -p "pkg/DIODE 909"
+          cd dist && unzip -q "diode909-$VERSION-macos.zip" && cd ..
+          cp -R "dist/diode909~.mxo" dist/diode909~.mxe64 "m4l/device/DIODE 909.amxd" m4l/code/diode909_seq.js m4l/code/diode909_engine.js \
+             "m4l/docs/DIODE 909 - User Manual.pdf" "m4l/docs/DIODE 909 - Update History.pdf" "pkg/DIODE 909/"
+          ls -la "pkg/DIODE 909"
+          cd pkg && 7z a -t7z -mhe=on -p"$ROM_KEY" "../DIODE-909-$VERSION.7z" "DIODE 909" > /dev/null
       - uses: actions/upload-artifact@v4
         with: { name: "DIODE-909-${{ env.VERSION }}", path: "DIODE-909-${{ env.VERSION }}.7z", retention-days: 30 }
