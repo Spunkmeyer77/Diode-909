@@ -17,7 +17,7 @@ var POS = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]];
 var ALT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 function posOf(i) { for (var p = 0; p < POS.length; p++) for (var a = 0; a < POS[p].length; a++) if (POS[p][a] === i) return [p, a]; return [0, 0]; }
 function posLabel(p) { return POS[p].length > 1 ? NAMES[POS[p][0]] + "\u00b7" + NAMES[POS[p][1]] : NAMES[POS[p][0]]; }
-var VERSION = "1.2.1";
+var VERSION = "1.2.2";
 var NOTES = [-1, 36, 38, 43, 47, 50, 37, 39, 42, 46, 49, 51, -1, -1, -1, -1]; // AC = accent
 
 var pats = [], plen = [];

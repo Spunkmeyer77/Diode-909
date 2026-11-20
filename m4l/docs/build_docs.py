@@ -1,7 +1,7 @@
 # builds "DIODE 909 - User Manual.pdf" and "DIODE 909 - Update History.pdf" (headless Chrome)
 import subprocess, os
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 CSS = """<style>@page{size:A4;margin:18mm 16mm}body{font-family:Arial,sans-serif;color:#222;font-size:10.5pt;line-height:1.45}
 h1{font-size:30pt;margin:0;font-style:italic;color:#1a1a1a}.sub{color:#e0601a;font-size:13pt;margin-bottom:16px}
 h2{color:#c8361d;border-bottom:2px solid #f08a24;padding-bottom:3px;margin-top:20px}section{break-inside:avoid}
@@ -32,6 +32,7 @@ man = """<h1>DIODE 909</h1><div class=sub>Rhythm Composer for Max for Live — U
 <section><h2>14. Push 3</h2><p>With DIODE 909 selected, Push 3 shows its sound controls in four banks: <b>Main</b> (Accent, Flam, Swing, Volume, RS and CP level, HH level, CH decay), <b>BD SD</b>, <b>Toms</b> and <b>Cymbals</b> (HT decay, OH decay, crash and ride level and tune, QUALITY, snare RING). Play the drums from Push's pads in Drum mode with the notes above.</p></section>
 <section><h2>15. Credits</h2><p>DIODE 909 by Transistor Labs (Ticco Ross). TR-909 is a trademark of Roland Corporation, which is not associated with this product.</p><p>Contact: ticcoross@gmail.com · Store: https://ticcoross.gumroad.com/</p></section>"""
 hist = """<h1>DIODE 909</h1><div class=sub>Max for Live — Update History</div><div class=stripe></div>
+<section><h2>1.2.2</h2><ul><li>Hand clap level: at its factory LEVEL setting the clap now sits better with the other instruments (about 5 dB quieter than in 1.2.1).</li></ul></section>
 <section><h2>1.2.1</h2><ul><li>Hand clap matched to a real TR-909: a full, bright body after the three attack bursts (it was much too quiet), and a shorter low tail. It now sits naturally with the bass drum.</li><li>New RING knob on the snare drum: sets how long its low tone rings on after the hit. Fully up is the original sound.</li></ul></section>
 <section><h2>1.2.0</h2><ul><li>No more crackles with many instruments: the circuits now work 512 samples ahead, so a heavy attack has time to finish. DIODE 909 reports this latency to Live, which keeps it in time.</li><li>More voices compute at once on 8-core Macs (three helper threads).</li></ul></section>
 <section><h2>1.1.0</h2><ul><li>QUALITY switch: HQ (factory) or ECO, about a third less CPU.</li><li>Lower CPU in both modes: voices rest sooner once their sound has died away.</li><li>4/4 guide on the step keys (downbeats 1, 5, 9, 13 marked, keys grouped in fours).</li><li>Mute and solo as LEDs in the instrument bars.</li><li>Pattern slots as 909 keys, two rows of eight; displays beside the logo.</li><li>Knobs show their position at every value.</li></ul></section>

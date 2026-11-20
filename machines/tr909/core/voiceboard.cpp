@@ -780,6 +780,9 @@ struct VoiceBoard::Impl {
 	// goes down; at 1 nothing changes (the circuit's own tail)
 	double ringRate = 96000, sdRing = 1.0, sdRest = 0.0;
 	int64_t sdSince = int64_t(1) << 30;
+	// The clap's output trim (DIODE 909 1.2.2): with TM matched to a real 909 the clap sat ~10 dB over
+	// the bass drum and snare; LEVEL 7.5 now gives what LEVEL 4.1 gave (scaled around its resting level)
+	double hcGain = 0.55, hcRest = 0.0;
 	int blockLength = 0;
 	Parallel *parallel = nullptr;
 	void stepVoice(int v, double *s, int j);
@@ -1159,6 +1162,10 @@ void VoiceBoard::Impl::stepVoice(int v, double *s, int j)
 	s[sNoiseOf[size_t(v)]] = noiseBuf[size_t(j)];
 	units[size_t(v)].step(s, window, &noiseSub[size_t(j) * kNoiseSub]);
 	double jack = s[sJack[size_t(v)]];
+	if (v == int(Voice::HC)) {
+		hcRest += (jack - hcRest) * (1.0 / (1.0 * ringRate));
+		jack = hcRest + (jack - hcRest) * hcGain;
+	}
 	if (v == int(Voice::SD)) {
 		const double t = double(sdSince++) / ringRate;
 		if (t > 0.5) sdRest += (jack - sdRest) * (1.0 / (0.25 * ringRate)); // resting level, between hits
