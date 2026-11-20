@@ -126,7 +126,7 @@ function msLed(v) { // the header LED of instrument v (1..11)
 }
 var VOL = [W - 30, 63, 34];
 var RX = X0 + 9 * GW + 10;
-var MS_X = RX + 4, MS_Y = 52, MSB = 7, MSCOLS = 6, MSCW = 25, MSRH = 17, LOGO = [RX + 4, 24], PATB = 19;
+var MS_X = RX + 4, MS_Y = 52, MSB = 7, MSCOLS = 6, MSCW = 25, MSRH = 17, LOGO = [RX + 4, 24], PATB = 26;
 function msCell(v) { var i = v - 1; return [MS_X + (i % MSCOLS) * MSCW, MS_Y + Math.floor(i / MSCOLS) * MSRH]; }
 function mRect(v) { var c = msCell(v); return [c[0], c[1] + 7, MSB, MSB]; }
 function sRect(v) { var c = msCell(v); return [c[0] + MSB + 1, c[1] + 7, MSB, MSB]; }
@@ -138,7 +138,7 @@ var STRIP = [["BASS DRUM", 0, 1, 1], ["SNARE DRUM", 2, 2, 2], ["LOW TOM", 4, 3, 
              ["RIM SHOT", 10, 6, 7, "CLAP"], ["CLOSED", 12, 8, 9, "OPEN"], ["CRASH", 14, 10, 11, "RIDE"]];
 function stripRect(i) { var s0 = STRIP[i][1], x0 = KX + s0 * (KW + KGAP); return [x0, 145, 2 * KW + KGAP, 10]; }
 var PX = KX + 16 * (KW + KGAP) + 8;
-var PATCOLS = 8, PATCW = 36, PATRH = 29, PATY = 104, PATLABEL = [PX + 141, 98];
+var PATKEYS = true, PATCOLS = 8, PATCW = 36.5, PATRH = 35, PATY = 98, PATLABEL = [PX + 143, 95];
 function patRect(p) { return [PX + (p % PATCOLS) * PATCW, PATY + Math.floor(p / PATCOLS) * PATRH, PATB, PATB]; }
 var DX = PX + 92;
 var VALS = [[RX + 4, 57, 44, 22], [RX + 54, 57, 44, 22], [RX + 104, 57, 58, 22]];
@@ -284,11 +284,17 @@ function paint() {
     // patterns
     font(1, 6.2); textC(chain.length ? "CHAIN " + (chainPos >= 0 ? chainPos + 1 : 1) + "/" + chain.length : "PATTERN", PATLABEL[0], PATLABEL[1], chain.length ? ORANGE : INK);
     for (var pp = 0; pp < NP; pp++) {
-        var pr = patRect(pp), litP = pp === playPat || (pp === queued && blink);
-        button(pr, litP, false);
-        if (pp === editPat) { col(ORANGE); mgraphics.set_line_width(1.2); rect([pr[0] - 1, pr[1] - 1, pr[2] + 2, pr[3] + 2]); mgraphics.stroke(); }
+        var pr = patRect(pp), litP = pp === playPat || (pp === queued && blink), has = patHas(pp);
+        if (PATKEYS) {
+            stepKey(pr, litP ? 1 : 0);
+            font(1, 8.5); textC("" + (pp + 1), pr[0] + pr[2] / 2, pr[1] + pr[3] * 0.72, has || litP ? INK : [0.55, 0.54, 0.52]);
+        } else {
+            button(pr, litP, false);
+        }
+        if (pp === editPat) { col(ORANGE); mgraphics.set_line_width(1.6); rect([pr[0] - 1.5, pr[1] - 1.5, pr[2] + 3, pr[3] + 3]); mgraphics.stroke(); }
         var cn = []; for (var c2 = 0; c2 < chain.length; c2++) if (chain[c2] === pp) cn.push(c2 + 1);
-        font(1, PATB > 14 ? 6.5 : 5.2); textL(cn.length ? cn.join(",") : "" + (pp + 1), pr[0] + pr[2] + 1.5, pr[1] + PATB * 0.68, cn.length ? ORANGE : (patHas(pp) ? INK : DIM));
+        if (PATKEYS) { if (cn.length) { font(1, 5.2); var cw = mgraphics.text_measure(cn.join(","))[0] + 4; fillR([pr[0] + pr[2] / 2 - cw / 2, pr[1] + pr[3] + 0.5, cw, 6.5], ORANGE); textC(cn.join(","), pr[0] + pr[2] / 2, pr[1] + pr[3] + 5.6, WHITE); } }
+        else { font(1, PATB > 14 ? 6.5 : 5.2); textL(cn.length ? cn.join(",") : "" + (pp + 1), pr[0] + pr[2] + 1.5, pr[1] + PATB * 0.68, cn.length ? ORANGE : (has ? INK : DIM)); }
     }
     // displays
     var vals = [["LAST STEP", pad2(plen[editPat])], ["CHANNEL", "" + editCh], [NAMES[inst] + " NOTE", inst === AC ? "ACC" : noteName(NOTES[inst]) + " " + NOTES[inst]]];
@@ -350,7 +356,7 @@ function onclick(x, y, but, cmd, shift, capslock, option) {
         else setInst(st[2]);
         return;
     } }
-    for (var p = 0; p < NP; p++) if (inR(x, y, [patRect(p)[0] - 1, patRect(p)[1] - 1, PATB + 8, PATB + 2])) {
+    for (var p = 0; p < NP; p++) if (inR(x, y, [patRect(p)[0] - 1, patRect(p)[1] - 1, PATB + (PATKEYS ? 2 : 8), PATB + 2])) {
         if (shift) { if (chain.length < 32) chain.push(p); editPat = chain[0]; sendChain(); changed(); return; }
         if (chain.length) { chain = []; sendChain(); notifyclients(); }
         selectPattern(p); return;
