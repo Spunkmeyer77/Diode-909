@@ -120,7 +120,7 @@ man = """<div class=cover>
 <section><h2>16. Mute and Solo</h2><img src="p_leds.png"><p>Each instrument has a small round LED in its navy bar. On shared bars the left LED is the left instrument and the right LED the right one (HI HAT: closed hat left, open hat right).</p><ul>
 <li><b>Click</b> an LED to mute that instrument: it lights <b style="color:#d9662a">orange</b>.</li>
 <li><b>Alt/Option-click</b> to solo it: it lights <b>cream</b>. Only soloed instruments play.</li>
-<li><b>Cmd/Ctrl-click</b> solos only that instrument (clears the other solos).</li></ul><p>Above: the low tom and the hand clap muted, the bass drum soloed.</p></section>
+<li><b>Cmd/Ctrl-click</b> solos only that instrument (clears the other solos).</li></ul><p>Above, enlarged: an LED off (navy with grey ring), muted (orange) and soloed (cream).</p></section>
 
 <section><h2>17. Recording with WRITE</h2><img src="p_write.png" style="width:14%;float:right;margin-left:12px"><p>Click <b>WRITE</b>: its LED lights and its label turns orange. With Live playing, the drum notes you play on a MIDI keyboard, Push or Live's computer keyboard are recorded into the playing pattern at the nearest step. Velocity 120 or more records an accent. Click WRITE again to stop recording.</p></section>
 

@@ -4,7 +4,8 @@ import subprocess, sys, os, json
 here = os.path.dirname(os.path.abspath(__file__))
 seq = open(os.path.join(here, '..', 'code', 'diode909_seq.js')).read()
 out, setup = sys.argv[1], sys.argv[2]
-W, H, S = 1160, 166, 2
+import os as _os
+W, H, S = 1160, 166, int(_os.environ.get("PANEL_SCALE", "2"))
 html = """<html><head><meta charset=utf-8></head><body style="margin:0;background:#000"><canvas id=c width=%d height=%d style="width:%dpx;height:%dpx"></canvas><script>
 var cv=document.getElementById('c'),g=cv.getContext('2d');g.scale(%d,%d);var face='Arial',size=10,path=false;
 function fnt(){g.font=(face.indexOf('Bold')>=0?'bold ':'')+(face.indexOf('Italic')>=0?'italic ':'')+size+'px Arial';}
