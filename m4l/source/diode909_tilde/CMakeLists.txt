@@ -2,7 +2,7 @@ set(diode909_tilde_EXTERN_OUTPUT_NAME "diode909~" CACHE STRING "External name" F
 set(C74_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
 set(AUTHOR_DOMAIN "com.transistorlabs")
 set(BUNDLE_IDENTIFIER "diode909")
-set(GIT_VERSION_TAG "1.2.5")
+set(GIT_VERSION_TAG "1.2.6")
 include("${MAX_SDK_BASE}/script/max-pretarget.cmake")
 set(roms_inc "${CMAKE_CURRENT_BINARY_DIR}/generated/roms.inc")
 add_custom_command(OUTPUT "${roms_inc}"
