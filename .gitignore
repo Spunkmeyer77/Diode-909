@@ -2,3 +2,5 @@ build/
 build-*/
 *.wav
 .DS_Store
+roms/*
+!roms/tr909-roms.tar.enc
