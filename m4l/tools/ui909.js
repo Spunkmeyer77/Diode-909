@@ -73,12 +73,18 @@ var KG = [["TOTAL ACCENT", [["ACCENT", "d_ac"], ["FLAM", "d_flam"], null, ["SWIN
           ["CYMBAL", [["CR LEVEL", "d_cr_lvl"], ["RD LEVEL", "d_rd_lvl"], ["CR TUNE", "d_cr_tune"], ["RD TUNE", "d_rd_tune"]], [10, 11]]];
 function knobPos(g, k) { var x = X0 + g * GW; return [x + GW / 2 + (k % 2 === 0 ? -23 : 23), k < 2 ? 37 : 72]; }
 function headRect(g) { return [X0 + g * GW + 2, 4, GW - 4, 10]; }
-var VOL = [W - 34, 70, 34];
+var MS_GRID = false; // false: mute/solo as LEDs in the navy header bars
+function msLed(v) { // the header LED of instrument v (1..11)
+    for (var g = 1; g < KG.length; g++) { var sel = KG[g][2]; for (var h = 0; h < 2; h++) if (sel[h] === v && (h === 0 || sel[1] !== sel[0])) {
+        var hr = headRect(g); return [h === 0 ? hr[0] + 2.5 : hr[0] + hr[2] - 8.5, hr[1] + 2, 6, 6]; } }
+    return null;
+}
+var VOL = [W - 30, 63, 34];
 var RX = X0 + 9 * GW + 10;
-var MS_X = RX + 4, MS_Y = 52;
-function msCell(v) { var i = v - 1; return [MS_X + (i % 6) * 25, MS_Y + Math.floor(i / 6) * 17]; }
-function mRect(v) { var c = msCell(v); return [c[0], c[1] + 7, 7, 7]; }
-function sRect(v) { var c = msCell(v); return [c[0] + 8, c[1] + 7, 7, 7]; }
+var MS_X = RX + 4, MS_Y = 52, MSB = 7, MSCOLS = 6, MSCW = 25, MSRH = 17, LOGO = [RX + 4, 24], PATB = 19;
+function msCell(v) { var i = v - 1; return [MS_X + (i % MSCOLS) * MSCW, MS_Y + Math.floor(i / MSCOLS) * MSRH]; }
+function mRect(v) { var c = msCell(v); return [c[0], c[1] + 7, MSB, MSB]; }
+function sRect(v) { var c = msCell(v); return [c[0] + MSB + 1, c[1] + 7, MSB, MSB]; }
 var LEFTN = ["WRITE", "CLEAR", "COPY", "PASTE"];
 function leftRect(k) { return [14 + (k % 2) * 42, 96 + Math.floor(k / 2) * 34, 20, 20]; }
 var KX = 104, KW = 41, KGAP = 6.6, KY = 99;
@@ -86,10 +92,11 @@ function stepRect(s) { return [KX + s * (KW + KGAP), KY, KW, KW]; }
 var STRIP = [["BASS DRUM", 0, 1, 1], ["SNARE DRUM", 2, 2, 2], ["LOW TOM", 4, 3, 3], ["MID TOM", 6, 4, 4], ["HI TOM", 8, 5, 5],
              ["RIM SHOT", 10, 6, 7, "CLAP"], ["CLOSED", 12, 8, 9, "OPEN"], ["CRASH", 14, 10, 11, "RIDE"]];
 function stripRect(i) { var s0 = STRIP[i][1], x0 = KX + s0 * (KW + KGAP); return [x0, 145, 2 * KW + KGAP, 10]; }
-var PX = KX + 16 * (KW + KGAP) + 2;
-function patRect(p) { return [PX + (p % 4) * 22, 97 + Math.floor(p / 4) * 16.5, 13, 13]; }
+var PX = KX + 16 * (KW + KGAP) + 8;
+var PATCOLS = 8, PATCW = 36, PATRH = 29, PATY = 104, PATLABEL = [PX + 141, 98];
+function patRect(p) { return [PX + (p % PATCOLS) * PATCW, PATY + Math.floor(p / PATCOLS) * PATRH, PATB, PATB]; }
 var DX = PX + 92;
-var VALS = [[DX, 112, 44, 24], [DX + 50, 112, 44, 24], [DX + 100, 112, 62, 24]];
+var VALS = [[RX + 4, 57, 44, 22], [RX + 54, 57, 44, 22], [RX + 104, 57, 58, 22]];
 function setInst(i) { if (i >= 0 && i < NV) { inst = i; mgraphics.redraw(); } }
 
 // ---- parts drawn in code (fallback when artwork is unavailable) ----
@@ -149,7 +156,7 @@ function paint() {
         else {
             var parts = g === 6 ? ["RIM SHOT", "HAND CLAP"] : (g === 7 ? ["CH", "OH"] : ["CRASH", "RIDE"]);
             if (g === 7) textC("HI HAT", hr[0] + hr[2] / 2, hr[1] + 7.6, (inst === 8 || inst === 9) ? WHITE : ORANGE);
-            else for (var h = 0; h < 2; h++) textC(parts[h], hr[0] + hr[2] * (h ? 0.73 : 0.27), hr[1] + 7.6, inst === sel[h] ? WHITE : ORANGE);
+            else { font(1, g === 6 ? 5.8 : 6.6); for (var h = 0; h < 2; h++) textC(parts[h], hr[0] + hr[2] * (h ? 0.7 : 0.3), hr[1] + 7.4, inst === sel[h] ? WHITE : ORANGE); }
         }
         if (g) { col(INK); mgraphics.set_line_width(1); mgraphics.move_to(x + 0.5, 16); mgraphics.line_to(x + 0.5, 86); mgraphics.stroke(); }
         for (var k = 0; k < 4; k++) {
@@ -166,18 +173,24 @@ function paint() {
     col(INK); mgraphics.set_line_width(1); mgraphics.move_to(X0, 86.5); mgraphics.line_to(X0 + 9 * GW, 86.5); mgraphics.stroke();
 
     // logo, mute/solo, volume
-    mgraphics.select_font_face("Arial Bold"); mgraphics.set_font_size(21); textL("DIODE 909", RX + 4, 24, NAVY);
-    font(1, 7.6); textL("RHYTHM COMPOSER", RX + 5, 37, NAVY);
-    font(0, 5.5); textL("ticcoross.gumroad.com", RX + 5, 46, DIM);
+    mgraphics.select_font_face("Arial Bold"); mgraphics.set_font_size(21); textL("DIODE 909", LOGO[0], LOGO[1], NAVY);
+    font(1, 7.6); textL("RHYTHM COMPOSER", LOGO[0] + 1, LOGO[1] + 13, NAVY);
+    font(0, 5.5); textL("ticcoross.gumroad.com", LOGO[0] + 1, LOGO[1] + 22, DIM);
     var anySolo = 0; for (var v0 = 1; v0 < NV; v0++) if (solo[v0]) anySolo = 1;
+    for (var vl = 1; vl < NV && !MS_GRID; vl++) {
+        var lr = msLed(vl), on = solo[vl] ? AMBER : (mute[vl] ? RED : null), dark = anySolo && !solo[vl] && !mute[vl];
+        if (on) { col(on, 0.35); mgraphics.ellipse(lr[0] - 1.5, lr[1] - 1.5, lr[2] + 3, lr[3] + 3); mgraphics.fill(); }
+        col(on || (dark ? [0.45, 0.12, 0.10] : [0.10, 0.11, 0.18])); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
+        col(WHITE, 0.35); mgraphics.set_line_width(0.6); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.stroke();
+    }
     font(1, 5.5);
-    for (var v = 1; v < NV; v++) {
+    for (var v = 1; v < NV && MS_GRID; v++) {
         var c = msCell(v), silent = mute[v] || (anySolo && !solo[v]);
-        textC(NAMES[v], c[0] + 7.5, c[1] + 5, v === inst ? ORANGE : (silent ? DIM : INK));
+        textC(NAMES[v], c[0] + MSB + 0.5, c[1] + 5, v === inst ? ORANGE : (silent ? DIM : INK));
         fillR(mRect(v), mute[v] ? ORANGE : BOXOFF); fillR(sRect(v), solo[v] ? AMBER : BOXOFF);
         col(INK); mgraphics.set_line_width(0.7); rect(mRect(v)); mgraphics.stroke(); rect(sRect(v)); mgraphics.stroke();
     }
-    font(1, 5); textR("M", MS_X - 1.5, MS_Y + 13, INK); textR("S", MS_X - 1.5, MS_Y + 30, INK);
+    if (MS_GRID) font(1, 5), textC("M", mRect(1)[0] + MSB / 2, MS_Y + 7 + MSB + 6, DIM); MS_GRID && textC("S", sRect(1)[0] + MSB / 2, MS_Y + 7 + MSB + 6, DIM);
     font(1, 6.2); textC("VOLUME", VOL[0], VOL[1] - VOL[2] / 2 - 4, INK);
     knob(VOL[0], VOL[1], VOL[2], toN(DV["d_vol"]), true);
     if (dragMode === "vknob" && vName === "d_vol") { var tv = fmtVal(DV["d_vol"]); font(1, 7); textC(tv, VOL[0], VOL[1] + VOL[2] / 2 + 9.5, NAVY); }
@@ -190,13 +203,21 @@ function paint() {
         font(1, 5.8); textC(LEFTN[k2], r[0] + r[2] / 2, r[1] + 27, INK);
     }
 
+    // 4/4 guide: a navy bracket over each group of four keys, a downbeat marker on 1, 5, 9, 13
+    for (var gq = 0; gq < 4; gq++) {
+        var a0 = stepRect(gq * 4), a3 = stepRect(gq * 4 + 3);
+        fillR([a0[0], 88.5, a3[0] + a3[2] - a0[0], 1.4], NAVY);
+        fillR([a0[0], 88.5, 1.4, 4], NAVY); fillR([a3[0] + a3[2] - 1.4, 88.5, 1.4, 4], NAVY);
+    }
     // steps
     var showHead = playing && editPat === playPat && pos >= 0;
     for (var s = 0; s < NS; s++) {
         var sr = stepRect(s), on = pats[editPat][inst][s], inactive = s >= plen[editPat];
         var head = showHead && s === pos, acc = pats[editPat][AC][s] && inst !== AC;
-        if (acc) fillR([sr[0] + sr[2] / 2 - 8, 89, 16, 8.5], ORANGE);
-        font(1, 6.5); textC("" + (s + 1), sr[0] + sr[2] / 2, 96, acc ? WHITE : INK);
+        var down = s % 4 === 0;
+        if (acc) fillR([sr[0] + sr[2] / 2 - 8, 90.5, 16, 7.5], ORANGE);
+        else if (down) fillR([sr[0] + sr[2] / 2 - 8, 90.5, 16, 7.5], NAVY);
+        font(1, down ? 7 : 6.2); textC("" + (s + 1), sr[0] + sr[2] / 2, 96.6, acc || down ? WHITE : INK);
         var lit = on && !inactive;
         if (head && lit) stepKeyPressedLit(sr, on === 2 ? BLUE : RED);
         else stepKey(sr, head ? 3 : (lit ? (on === 2 ? 2 : 1) : 0));
@@ -213,16 +234,16 @@ function paint() {
             textC(st[4], rr[0] + rr[2] * 0.78, rr[1] + 7.4, inst === st[3] ? ORANGE : WHITE);
         }
     }
-    font(0, 5.2); textL("ALT-CLICK A KEY: FLAM   ·   CLICK A NAME: SELECT   ·   TOTAL ACCENT: ACCENT TRACK", KX, 163.5, DIM);
+    font(0, 5.2); textL("ALT-CLICK A KEY: FLAM   ·   CLICK A NAME: SELECT   ·   BAR LED: MUTE (ALT-CLICK: SOLO)   ·   TOTAL ACCENT: ACCENT TRACK", KX, 163.5, DIM);
 
     // patterns
-    font(1, 6.2); textC(chain.length ? "CHAIN " + (chainPos >= 0 ? chainPos + 1 : 1) + "/" + chain.length : "PATTERN", PX + 41, 92, chain.length ? ORANGE : INK);
+    font(1, 6.2); textC(chain.length ? "CHAIN " + (chainPos >= 0 ? chainPos + 1 : 1) + "/" + chain.length : "PATTERN", PATLABEL[0], PATLABEL[1], chain.length ? ORANGE : INK);
     for (var pp = 0; pp < NP; pp++) {
         var pr = patRect(pp), litP = pp === playPat || (pp === queued && blink);
         button(pr, litP, false);
         if (pp === editPat) { col(ORANGE); mgraphics.set_line_width(1.2); rect([pr[0] - 1, pr[1] - 1, pr[2] + 2, pr[3] + 2]); mgraphics.stroke(); }
         var cn = []; for (var c2 = 0; c2 < chain.length; c2++) if (chain[c2] === pp) cn.push(c2 + 1);
-        font(1, 5.2); textL(cn.length ? cn.join(",") : "" + (pp + 1), pr[0] + pr[2] + 1.5, pr[1] + 8.8, cn.length ? ORANGE : (patHas(pp) ? INK : DIM));
+        font(1, PATB > 14 ? 6.5 : 5.2); textL(cn.length ? cn.join(",") : "" + (pp + 1), pr[0] + pr[2] + 1.5, pr[1] + PATB * 0.68, cn.length ? ORANGE : (patHas(pp) ? INK : DIM));
     }
     // displays
     var vals = [["LAST STEP", pad2(plen[editPat])], ["CHANNEL", "" + editCh], [NAMES[inst] + " NOTE", inst === AC ? "ACC" : noteName(NOTES[inst]) + " " + NOTES[inst]]];
@@ -230,7 +251,7 @@ function paint() {
         var vr = VALS[q];
         font(1, 5.6); textC(vals[q][0], vr[0] + vr[2] / 2, vr[1] - 3, INK);
         fillR(vr, DISP); col(BLACK); mgraphics.set_line_width(1); rect(vr); mgraphics.stroke();
-        font(1, 11); textC(vals[q][1], vr[0] + vr[2] / 2, vr[1] + 16.5, RED);
+        font(1, 11); textC(vals[q][1], vr[0] + vr[2] / 2, vr[1] + 15.5, RED);
     }
     font(0, 5); textR("v" + VERSION, W - 6, 165, DIM);
     led_rec_dummy = 0;
@@ -250,20 +271,25 @@ function knobAt(x, y) {
 }
 function onclick(x, y, but, cmd, shift, capslock, option) {
     dragMode = null;
-    if (x >= RX && y < 48 && x < RX + 120) { max.launchbrowser("https://ticcoross.gumroad.com/"); return; }
+    if (x >= LOGO[0] && y < LOGO[1] + 24 && y > LOGO[1] - 22 && x < LOGO[0] + 116) { max.launchbrowser("https://ticcoross.gumroad.com/"); return; }
     var kn = knobAt(x, y);
     if (kn && DV[kn]) { dragMode = "vknob"; vName = kn; dragY = y; dragStart = toN(DV[kn]); vFine = shift; mgraphics.redraw(); return; }
+    for (var vl = 1; vl < NV && !MS_GRID; vl++) { var lr = msLed(vl); if (inR(x, y, [lr[0] - 2, lr[1] - 2, lr[2] + 4, lr[3] + 4])) {
+        if (option || cmd) { if (cmd) { for (var q0 = 1; q0 < NV; q0++) if (q0 !== vl) solo[q0] = 0; } solo[vl] = solo[vl] ? 0 : 1; }
+        else mute[vl] = mute[vl] ? 0 : 1;
+        sendMS(); changed(); return;
+    } }
     for (var g = 0; g < KG.length; g++) if (inR(x, y, headRect(g))) {
         var hr = headRect(g), sel = KG[g][2];
         setInst(x < hr[0] + hr[2] / 2 ? sel[0] : sel[1]); return;
     }
-    for (var v = 1; v < NV; v++) {
-        if (inR(x, y, [mRect(v)[0] - 1, mRect(v)[1] - 1, 9, 9])) { mute[v] = mute[v] ? 0 : 1; sendMS(); changed(); return; }
-        if (inR(x, y, [sRect(v)[0] - 1, sRect(v)[1] - 1, 9, 9])) {
+    for (var v = 1; v < NV && MS_GRID; v++) {
+        if (inR(x, y, [mRect(v)[0] - 1, mRect(v)[1] - 1, MSB + 1, MSB + 2])) { mute[v] = mute[v] ? 0 : 1; sendMS(); changed(); return; }
+        if (inR(x, y, [sRect(v)[0], sRect(v)[1] - 1, MSB + 1, MSB + 2])) {
             if (cmd) { for (var q = 1; q < NV; q++) solo[q] = 0; solo[v] = 1; } else solo[v] = solo[v] ? 0 : 1;
             sendMS(); changed(); return;
         }
-        var c = msCell(v); if (inR(x, y, [c[0], c[1] - 1, 15, 7])) { setInst(v); return; }
+        var c = msCell(v); if (inR(x, y, [c[0], c[1] - 1, 2 * MSB + 1, 7])) { setInst(v); return; }
     }
     for (var s = 0; s < NS; s++) { var sr = stepRect(s); if (inR(x, y, [sr[0], 88, sr[2], KY + KW - 88])) {
         if (option && inst !== AC) paintVal = pats[editPat][inst][s] === 2 ? 1 : 2; // Alt/Option: flam step (blue LED)
@@ -279,7 +305,7 @@ function onclick(x, y, but, cmd, shift, capslock, option) {
         else setInst(st[2]);
         return;
     } }
-    for (var p = 0; p < NP; p++) if (inR(x, y, [patRect(p)[0] - 1, patRect(p)[1] - 1, 21, 15])) {
+    for (var p = 0; p < NP; p++) if (inR(x, y, [patRect(p)[0] - 1, patRect(p)[1] - 1, PATB + 8, PATB + 2])) {
         if (shift) { if (chain.length < 32) chain.push(p); editPat = chain[0]; sendChain(); changed(); return; }
         if (chain.length) { chain = []; sendChain(); notifyclients(); }
         selectPattern(p); return;
