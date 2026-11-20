@@ -14,7 +14,7 @@ rep('// instrument select order like the 808: AC, BD, SD, LT, MT, HT, RS, CP, CB
     '// instrument select order like the 909: AC, BD, SD, LT, MT, HT, RS, CP, CH, OH, CR, RD\nvar NAMES = ["AC", "BD", "SD", "LT", "MT", "HT", "RS", "CP", "CH", "OH", "CR", "RD", "", "", "", ""];\nvar NI = 16, NV = 12, NP = 16, NS = 16, AC = 0; // NI: stored tracks, NV: tracks in use')
 rep('// selector knob: 12 positions like the 808; four positions are pairs (LT/LC, MT/MC, HT/HC, RS/CL)\nvar POS = [[0], [1], [2], [3, 12], [4, 13], [5, 14], [6, 15], [7], [8], [9], [10], [11]];',
     '// selector knob: 12 positions, one instrument each\nvar POS = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]];')
-rep('var VERSION = "1.1.0";', 'var VERSION = "1.2.3";')
+rep('var VERSION = "1.1.0";', 'var VERSION = "1.2.4";')
 rep('var NOTES = [-1, 36, 38, 43, 47, 50, 37, 39, 56, 49, 42, 46, 64, 63, 62, 75];', 'var NOTES = [-1, 36, 38, 43, 47, 50, 37, 39, 42, 46, 49, 51, -1, -1, -1, -1];')
 # mute/solo and selection: only the 11 voices in use
 rep('for (var v = 1; v < NI; v++) { if (mute[v])', 'for (var v = 1; v < NV; v++) { if (mute[v])')

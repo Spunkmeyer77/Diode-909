@@ -17,7 +17,7 @@ var POS = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]];
 var ALT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 function posOf(i) { for (var p = 0; p < POS.length; p++) for (var a = 0; a < POS[p].length; a++) if (POS[p][a] === i) return [p, a]; return [0, 0]; }
 function posLabel(p) { return POS[p].length > 1 ? NAMES[POS[p][0]] + "\u00b7" + NAMES[POS[p][1]] : NAMES[POS[p][0]]; }
-var VERSION = "1.2.3";
+var VERSION = "1.2.4";
 var NOTES = [-1, 36, 38, 43, 47, 50, 37, 39, 42, 46, 49, 51, -1, -1, -1, -1]; // AC = accent
 
 var pats = [], plen = [];
@@ -238,14 +238,13 @@ function paint() {
     var anySolo = 0; for (var v0 = 1; v0 < NV; v0++) if (solo[v0]) anySolo = 1;
     for (var vl = 1; vl < NV && !MS_GRID; vl++) {
         var lr = msLed(vl), on = solo[vl] ? AMBER : (mute[vl] ? [1, 0.18, 0.12] : null), dark = anySolo && !solo[vl] && !mute[vl];
-        // light rim, so the LED shows on the navy bar even when off
-        col([0.86, 0.85, 0.80]); mgraphics.ellipse(lr[0] - 0.8, lr[1] - 0.8, lr[2] + 1.6, lr[3] + 1.6); mgraphics.fill();
         if (on) {
+            col([0.86, 0.85, 0.80]); mgraphics.ellipse(lr[0] - 0.8, lr[1] - 0.8, lr[2] + 1.6, lr[3] + 1.6); mgraphics.fill();
             col(on); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
             col([1, 1, 0.9], 0.7); mgraphics.ellipse(lr[0] + 1.8, lr[1] + 1.4, 2.4, 2); mgraphics.fill(); // highlight
-        } else {
-            col(dark ? [0.55, 0.16, 0.12] : [0.36, 0.09, 0.08]); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
-            col([1, 0.8, 0.8], 0.25); mgraphics.ellipse(lr[0] + 1.8, lr[1] + 1.4, 2.4, 2); mgraphics.fill();
+        } else { // off: a lighter navy with a thin light ring, in the bar's style
+            col(dark ? [0.30, 0.33, 0.50] : [0.27, 0.30, 0.45]); mgraphics.ellipse(lr[0], lr[1], lr[2], lr[3]); mgraphics.fill();
+            col([0.80, 0.82, 0.90], dark ? 0.85 : 0.6); mgraphics.set_line_width(0.8); mgraphics.ellipse(lr[0] + 0.4, lr[1] + 0.4, lr[2] - 0.8, lr[3] - 0.8); mgraphics.stroke();
         }
     }
     font(1, 5.5);
